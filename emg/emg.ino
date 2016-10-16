@@ -20,6 +20,7 @@ void setup() {
 
 int isRep;
 int repCount = 0;
+int lastAverage=-1;
 
 // the loop routine runs over and over again forever:
 void loop() {
@@ -56,23 +57,39 @@ void loop() {
     }
     avg /= MOVING_WINDOW;
 
+    
+
+    unsigned long timeRise=0, timeFall=0, deadStart=0, deadEnd=0;
+    unsigned long pulseWidth, deadWidth;
 
     //edge detection for reps
-    if (avg < REP_THRESHHOLD) {
-      if (isRep == 1) {
-        isRep = 0;
-      }
-      avg = -1;
-    }
-    else {
-      if (isRep == 0) {
-        isRep = 1;
+    if (avg >= REP_THRESHHOLD) {
+
+      //start of pulse
+      if (lastAverage == -1) {
+        timeRise = millis();
+        deadEnd = timeRise;
+        deadWidth = deadStart - deadEnd;
+        
         repCount++;
         Serial.println("repCount----------------------------------------");
-        Serial.println(repCount);
+        Serial.println(repCount);        
       }
+
+    }
+    else {//avg < REP_THRESHHOLD
+      
+      //end of pulse
+      if(lastAverage > -1) {        
+        timeFall = millis();        
+        pulseWidth = timeFall - timeRise;
+        deadStart = timeFall;
+      }
+      
+      avg = -1;
     }
 
+    
 
     //quantize the voltage
     //voltage = (int)(voltage/0.4);
