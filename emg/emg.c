@@ -24,8 +24,7 @@ EMG_stats my_stats;
 #define EMG_addr 0x00 //fill in later
 #define TIME_AFTER_SET 1000 //ms after set completes
 
-static double repThreshhold;
-static int movingWindowSize; 
+
 static double lastAverage = -1;
 
 
@@ -106,13 +105,4 @@ double getFilteredAverage() {
 	average /= movingWindowSize;
 
 	return average;
-}
-
-
-void setRepThreshhold(double threshhold) {
-	REP_THRESHHOLD = threshhold;
-}
-
-void setMovingAverageWindow(int windowSize) {
-	MOVING_WINDOW_SIZE = windowSize;
 }

@@ -13,9 +13,18 @@ struct EMG_stats {
 	int numReps;
 };
 
-EMG_stats* getSetStats();
-void setRepThreshhold(double threshhold);
-void setMovingAverageWindow(int windowSize);//do I even want this??
+
+
+static struct EMG_params {
+	double upThreshhold;
+	double downThreshhold;
+	int movingWindowSize; 
+};
+
+
+
+EMG_stats* getSetStats(EMG_params& my_params);
+void sendSetPacket(EMG_params& my_params);
 //void setGain(int gain);
 
 
