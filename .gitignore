@@ -1,3 +1,13 @@
 .metadata
 RemoteSystemsTempFiles
 vars.ini
+FlexZone/FlexZoneApp/.launches/*
+FlexZone/FlexZoneApp/.config/*
+FlexZone/FlexZoneApp/Debug/*
+FlexZone/FlexZoneApp/Release/*
+FlexZone/FlexZoneApp/.xdchelp
+FlexZone/FlexZoneStack/.launches/*
+FlexZone/FlexZoneStack/.config/*
+FlexZone/FlexZoneStack/Debug/*
+FlexZone/FlexZoneStack/Release/*
+FlexZone/FlexZoneStack/.xdchelp
