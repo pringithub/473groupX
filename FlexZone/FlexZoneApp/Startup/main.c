@@ -116,8 +116,7 @@ int main() {
 	//Heart beat task - Priority 2
 	heartbeat_createTask();
 	//EMG task - Priority 1
-	//emg_createTask();
-
+	emg_createTask();
 	// MPU2650 Accelerometer (SPI) - Priority 2
 	accel_createTask();
 

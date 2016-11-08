@@ -37,7 +37,7 @@
 #include <EMG_Service.h>
 #include <string.h>
 
-//#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
+#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
 
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Semaphore.h>

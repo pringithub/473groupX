@@ -41,7 +41,7 @@
 #define EMG_TASK_STACK_SIZE               	800
 #endif
 
-#define EMG_PERIOD_IN_MS						50
+#define EMG_PERIOD_IN_MS					200
 
 //===============================================
 //=========== Global Data Structures ============
@@ -125,11 +125,11 @@ static void emg_init(void) {
 		Task_exit();
 	}
 
-	ledGreenPinHandle = PIN_open(&ledGreenPinState, ledGreenPinTable);
-	if (!ledGreenPinHandle) {
-		Log_error0("Error initializing onboard LED pins");
-		Task_exit();
-	}
+//	ledGreenPinHandle = PIN_open(&ledGreenPinState, ledGreenPinTable);
+//	if (!ledGreenPinHandle) {
+//		Log_error0("Error initializing onboard LED pins");
+//		Task_exit();
+//	}
 
 	//Initialize AUX, ADI, and ADC Clocks
 	AUXWUCClockEnable(AUX_WUC_SOC_CLOCK);
@@ -169,12 +169,13 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	while (1) {
 		//Wait for ADC poll and ADC reading
 		Semaphore_pend(Semaphore_handle(&emgSemaphore), BIOS_WAIT_FOREVER);
-		//blink LED based on ADC value
-		if (adc > 2000) {
-			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 1);
-		} else {
-			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 0);
-		}
+        Log_info1("EMG Thread: ADC result = %d", (IArg)adc);
+//		//blink LED based on ADC value
+//		if (adc > 2000) {
+//			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 1);
+//		} else {
+//			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 0);
+//		}
 	}
 }
 

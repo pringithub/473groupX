@@ -35,7 +35,7 @@
 
 //Standard Header Files
 #include <string.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 //**********************************************************************************
 // Required Definitions
@@ -114,12 +114,12 @@ void accel_init()
 {
 	mpu_spi_init();
 
-	// Open GPIO pins
-	accelledPinHandle = PIN_open(&accelledPinState, accelledPinTable);
-	if (!accelledPinHandle) {
-		Log_error0("Error initializing on board LED pins");
-		Task_exit();
-	}
+//	// Open GPIO pins
+//	accelledPinHandle = PIN_open(&accelledPinState, accelledPinTable);
+//	if (!accelledPinHandle) {
+//		Log_error0("Error initializing on board LED pins");
+//		Task_exit();
+//	}
 
 	//Configure clock object
 	Clock_Params clockParams;
@@ -146,10 +146,7 @@ static void accel_taskFxn(UArg a0, UArg a1) {
 		//Wait for SPI Semaphore
 		Semaphore_pend(Semaphore_handle(&accelSemaphore), BIOS_WAIT_FOREVER);
 		uint16_t result = read_MPU(Y_AXIS, ACCEL);
-		if (30000 < result)
-			PIN_setOutputValue(accelledPinHandle, Board_LED1, 1);
-		else
-			PIN_setOutputValue(accelledPinHandle, Board_LED1, 0);
+        Log_info1("Accelerometer Thread: MPU result = %d", (IArg)result);
 	}
 }
 
