@@ -194,21 +194,9 @@ static uint8_t rspTxRetry = 0;
 
 /* Pin driver handles */
 static PIN_Handle buttonPinHandle;
-static PIN_Handle ledPinHandle;
 
 /* Global memory storage for a PIN_Config table */
 static PIN_State buttonPinState;
-static PIN_State ledPinState;
-
-/*
- * Initial LED pin configuration table
- *   - LEDs Board_LED0 & Board_LED1 are off.
- */
-PIN_Config ledPinTable[] = {
-  Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-  Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-  PIN_TERMINATE
-};
 
 /*
  * Application button pin configuration table:
@@ -233,16 +221,16 @@ static uint8_t button1State = 0;
  * LOCAL FUNCTIONS
  */
 
-static void ProjectZero_init( void );
-static void ProjectZero_taskFxn(UArg a0, UArg a1);
+static void FlexZone_init( void );
+static void FlexZone_taskFxn(UArg a0, UArg a1);
 
 static void user_processApplicationMessage(app_msg_t *pMsg);
-static uint8_t ProjectZero_processStackMsg(ICall_Hdr *pMsg);
-static uint8_t ProjectZero_processGATTMsg(gattMsgEvent_t *pMsg);
+static uint8_t FlexZone_processStackMsg(ICall_Hdr *pMsg);
+static uint8_t FlexZone_processGATTMsg(gattMsgEvent_t *pMsg);
 
-static void ProjectZero_sendAttRsp(void);
-static uint8_t ProjectZero_processGATTMsg(gattMsgEvent_t *pMsg);
-static void ProjectZero_freeAttRsp(uint8_t status);
+static void FlexZone_sendAttRsp(void);
+static uint8_t FlexZone_processGATTMsg(gattMsgEvent_t *pMsg);
+static void FlexZone_freeAttRsp(uint8_t status);
 
 static void user_processGapStateChangeEvt(gaprole_States_t newState);
 static void user_gapStateChangeCB(gaprole_States_t newState);
@@ -324,7 +312,7 @@ static AccelServiceCBs_t user_Accel_ServiceCBs=
  *
  * @return  None.
  */
-void ProjectZero_createTask(void)
+void FlexZone_createTask(void)
 {
   Task_Params taskParams;
 
@@ -334,7 +322,7 @@ void ProjectZero_createTask(void)
   taskParams.stackSize = PRZ_TASK_STACK_SIZE;
   taskParams.priority = PRZ_TASK_PRIORITY;
 
-  Task_construct(&przTask, ProjectZero_taskFxn, &taskParams, NULL);
+  Task_construct(&przTask, FlexZone_taskFxn, &taskParams, NULL);
 }
 
 /*
@@ -346,7 +334,7 @@ void ProjectZero_createTask(void)
  *
  * @return  None.
  */
-static void ProjectZero_init(void)
+static void FlexZone_init(void)
 {
   // ******************************************************************
   // NO STACK API CALLS CAN OCCUR BEFORE THIS CALL TO ICall_registerApp
@@ -366,13 +354,7 @@ static void ProjectZero_init(void)
   // Hardware initialization
   // ******************************************************************
 
-  // Open LED pins
-  ledPinHandle = PIN_open(&ledPinState, ledPinTable);
-  if(!ledPinHandle) {
-    Log_error0("Error initializing board LED pins");
-    Task_exit();
-  }
-
+  // Open Button pins
   buttonPinHandle = PIN_open(&buttonPinState, buttonPinTable);
   if(!buttonPinHandle) {
     Log_error0("Error initializing button pins");
@@ -526,10 +508,10 @@ static void ProjectZero_init(void)
  *
  * @return  None.
  */
-static void ProjectZero_taskFxn(UArg a0, UArg a1)
+static void FlexZone_taskFxn(UArg a0, UArg a1)
 {
   // Initialize application
-  ProjectZero_init();
+  FlexZone_init();
 
   // Application main loop
   for (;;)
@@ -563,13 +545,13 @@ static void ProjectZero_taskFxn(UArg a0, UArg a1)
             if (pEvt->event_flag & PRZ_CONN_EVT_END_EVT)
             {
               // Try to retransmit pending ATT Response (if any)
-              ProjectZero_sendAttRsp();
+              FlexZone_sendAttRsp();
             }
           }
           else // It's a message from the stack and not an event.
           {
             // Process inter-task message
-            safeToDealloc = ProjectZero_processStackMsg((ICall_Hdr *)pMsg);
+            safeToDealloc = FlexZone_processStackMsg((ICall_Hdr *)pMsg);
           }
         }
 
@@ -1025,7 +1007,7 @@ void user_AccelService_CfgChangeHandler(char_data_t *pCharData)
  *
  * @return  TRUE if safe to deallocate incoming message, FALSE otherwise.
  */
-static uint8_t ProjectZero_processStackMsg(ICall_Hdr *pMsg)
+static uint8_t FlexZone_processStackMsg(ICall_Hdr *pMsg)
 {
   uint8_t safeToDealloc = TRUE;
 
@@ -1033,7 +1015,7 @@ static uint8_t ProjectZero_processStackMsg(ICall_Hdr *pMsg)
   {
     case GATT_MSG_EVENT:
       // Process GATT message
-      safeToDealloc = ProjectZero_processGATTMsg((gattMsgEvent_t *)pMsg);
+      safeToDealloc = FlexZone_processGATTMsg((gattMsgEvent_t *)pMsg);
       break;
 
     case HCI_GAP_EVENT_EVENT:
@@ -1066,7 +1048,7 @@ static uint8_t ProjectZero_processStackMsg(ICall_Hdr *pMsg)
  *
  * @return  TRUE if safe to deallocate incoming message, FALSE otherwise.
  */
-static uint8_t ProjectZero_processGATTMsg(gattMsgEvent_t *pMsg)
+static uint8_t FlexZone_processGATTMsg(gattMsgEvent_t *pMsg)
 {
   // See if GATT server was unable to transmit an ATT response
   if (pMsg->hdr.status == blePending)
@@ -1080,7 +1062,7 @@ static uint8_t ProjectZero_processGATTMsg(gattMsgEvent_t *pMsg)
                                    PRZ_CONN_EVT_END_EVT) == SUCCESS)
     {
       // First free any pending response
-      ProjectZero_freeAttRsp(FAILURE);
+      FlexZone_freeAttRsp(FAILURE);
 
       // Hold on to the response message for retransmission
       pAttRsp = pMsg;
@@ -1135,7 +1117,7 @@ static uint8_t ProjectZero_processGATTMsg(gattMsgEvent_t *pMsg)
  *
  * @return  none
  */
-static void ProjectZero_sendAttRsp(void)
+static void FlexZone_sendAttRsp(void)
 {
   // See if there's a pending ATT Response to be transmitted
   if (pAttRsp != NULL)
@@ -1154,7 +1136,7 @@ static void ProjectZero_sendAttRsp(void)
       HCI_EXT_ConnEventNoticeCmd(pAttRsp->connHandle, selfEntity, 0);
 
       // We're done with the response message
-      ProjectZero_freeAttRsp(status);
+      FlexZone_freeAttRsp(status);
     }
     else
     {
@@ -1172,7 +1154,7 @@ static void ProjectZero_sendAttRsp(void)
  *
  * @return  none
  */
-static void ProjectZero_freeAttRsp(uint8_t status)
+static void FlexZone_freeAttRsp(uint8_t status)
 {
   // See if there's a pending ATT response message
   if (pAttRsp != NULL)

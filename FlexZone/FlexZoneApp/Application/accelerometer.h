@@ -1,8 +1,8 @@
 /*
 * Application Name:		FlexZone (Application)
-* File Name: 			heartbeat.h
+* File Name: 			accelerometer.h
 * Group: 				GroupX - FlexZone
-* Description:			Defines and prototypes for the Heart beat Thread.
+* Description:			Defines and prototypes for the Accelerometer Thread.
  */
 
 //**********************************************************************************
@@ -21,10 +21,9 @@
 // Function Prototypes
 //**********************************************************************************
 /**
- * Creates Heart beat task and configures all required hardware components.
+ * Creates Accelerometer task running at and configures all required hardware components.
  *
  * @param 	none
  * @return 	none
  */
-extern void heartbeat_createTask(void);
-
+extern void accel_createTask(void);

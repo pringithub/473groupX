@@ -1,13 +1,13 @@
 /*
  * Application Name:	FlexZone (Application)
- * File Name: 			heartbeat.c
+ * File Name: 			emg.c
  * Group: 				GroupX - FlexZone
- * Description:			Implementation file the Heartbeat Thread. Runs at Priority 2.
+ * Description:			Implementation file the EMG Thread.
  */
 
-//===============================================
-//================ Header Files =================
-//===============================================
+//**********************************************************************************
+// Header Files
+//**********************************************************************************
 //XDCtools Header Files
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/Diags.h>
@@ -28,33 +28,39 @@
 
 //Board Specific Header Files
 #include "Board.h"
+#include "emg.h"
 
 //Standard Header Files
 //#include <stdio.h>	// used for printf()
 
-//===============================================
-//============ Required Definitions =============
-//===============================================
+//**********************************************************************************
+// Required Definitions
+//**********************************************************************************
 #define EMG_TASK_PRIORITY				   	1
 #ifndef EMG_TASK_STACK_SIZE
 #define EMG_TASK_STACK_SIZE               	800
 #endif
 
-#define PERIOD_IN_MS						50
+#define EMG_PERIOD_IN_MS						50
 
 //===============================================
 //=========== Global Data Structures ============
 //===============================================
 //Pin driver handles
 static PIN_Handle emgGpioPinHandle;
+static PIN_Handle ledGreenPinHandle;
 
 //Global memory storage for a PIN_Config table
 static PIN_State emgGpioPinState;
+static PIN_State ledGreenPinState;
 
 //Initial LED pin configuration table
+//Initial onboard LED pin configuration table
+PIN_Config ledGreenPinTable[] = {
+Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+PIN_TERMINATE };
+
 PIN_Config emgGpioPinTable[] = {
-Board_DIO1_RFSW | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL
-		| PIN_DRVSTR_MAX,
 Board_DIO30_ANALOG | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,
 PIN_TERMINATE };
 
@@ -71,18 +77,18 @@ static Clock_Struct emgClock;
 //Global data buffer for ADC samples
 uint32_t adc = 0;
 
-//===============================================
-//======== Local Function Prototypes ============
-//===============================================
+//**********************************************************************************
+// Local Function Prototypes
+//**********************************************************************************
 static void emg_init(void);
 static void emg_taskFxn(UArg a0, UArg a1);
 static void emgPoll_SwiFxn(UArg a0);
 
-//===============================================
-//=========== Function Definitions ==============
-//===============================================
+//**********************************************************************************
+// Function Definitions
+//**********************************************************************************
 /**
- * Creates EMG task running at Priority 1 and creates required semaphore for deferred interrupt processing of ADC data.
+ * Creates EMG task and creates required semaphore for deferred interrupt processing of ADC data.
  *
  * @param 	none
  * @return 	none
@@ -119,6 +125,12 @@ static void emg_init(void) {
 		Task_exit();
 	}
 
+	ledGreenPinHandle = PIN_open(&ledGreenPinState, ledGreenPinTable);
+	if (!ledGreenPinHandle) {
+		Log_error0("Error initializing onboard LED pins");
+		Task_exit();
+	}
+
 	//Initialize AUX, ADI, and ADC Clocks
 	AUXWUCClockEnable(AUX_WUC_SOC_CLOCK);
 	AUXWUCClockEnable(AUX_WUC_ADI_CLOCK);
@@ -137,15 +149,15 @@ static void emg_init(void) {
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
 	clockParams.arg = (UArg) 1;
-	clockParams.period = PERIOD_IN_MS * (1000 / Clock_tickPeriod);
+	clockParams.period = EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod);
 	clockParams.startFlag = TRUE;	//Indicates to start immediately
 
 	//Dynamically Construct Clock
-	Clock_construct(&emgClock, emgPoll_SwiFxn, PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+	Clock_construct(&emgClock, emgPoll_SwiFxn, EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
 }
 
 /**
- * Primary heartbeat task. Calls function to initialize hardware once and blinks green LED at specified period.
+ * Primary EMG task. Calls function to initialize hardware once and responds to ADC samples to turn on LED1.
  *
  * @param 	none
  * @return 	none
@@ -159,9 +171,9 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		Semaphore_pend(Semaphore_handle(&emgSemaphore), BIOS_WAIT_FOREVER);
 		//blink LED based on ADC value
 		if (adc > 2000) {
-			PIN_setOutputValue(emgGpioPinHandle, Board_DIO1_RFSW, 1);
+			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 1);
 		} else {
-			PIN_setOutputValue(emgGpioPinHandle, Board_DIO1_RFSW, 0);
+			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 0);
 		}
 	}
 }

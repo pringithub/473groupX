@@ -11,3 +11,6 @@ FlexZone/FlexZoneStack/.config/*
 FlexZone/FlexZoneStack/Debug/*
 FlexZone/FlexZoneStack/Release/*
 FlexZone/FlexZoneStack/.xdchelp
+FlexZone/vars_ble2.2.ini
+FlexZone/FlexZoneApp_ble2.2
+FlexZone/FlexZoneStack_ble2.2

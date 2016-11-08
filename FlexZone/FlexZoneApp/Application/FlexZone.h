@@ -30,8 +30,8 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PROJECTZERO_H
-#define PROJECTZERO_H
+#ifndef FLEXZONE_H
+#define FLEXZONE_H
 
 #ifdef __cplusplus
 extern "C"
@@ -65,9 +65,7 @@ extern "C"
 /*
  * Task creation function for the Simple BLE Peripheral.
  */
-extern void ProjectZero_createTask(void);
-
-extern void heartbeat_createTask(void);
+extern void FlexZone_createTask(void);
 
 
 /*********************************************************************
@@ -77,4 +75,4 @@ extern void heartbeat_createTask(void);
 }
 #endif
 
-#endif /* PROJECTZERO_H */
+#endif /* FLEXZONE_H */

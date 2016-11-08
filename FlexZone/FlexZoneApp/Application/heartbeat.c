@@ -2,12 +2,12 @@
  * Application Name:	FlexZone (Application)
  * File Name: 			heartbeat.c
  * Group: 				GroupX - FlexZone
- * Description:			Implementation file the Heartbeat Thread. Runs at Priority 2.
+ * Description:			Implementation file the Heart beat Thread.
  */
 
-//===============================================
-//================ Header Files =================
-//===============================================
+//**********************************************************************************
+// Header Files
+//**********************************************************************************
 //XDCtools Header Files
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/Diags.h>
@@ -23,52 +23,53 @@
 
 //Board Specific Header Files
 #include "Board.h"
+#include "heartbeat.h"
 
 //Standard Header Files
 //#include <stdio.h>	// used for printf()
 
-//===============================================
-//============ Required Definitions =============
-//===============================================
-#define HRB_TASK_PRIORITY				   	2
+//**********************************************************************************
+// Required Definitions
+//**********************************************************************************
+#define HRB_TASK_PRIORITY				   	1
 #ifndef HRB_TASK_STACK_SIZE
 #define HRB_TASK_STACK_SIZE              	800
 #endif
 
-#define PERIOD_IN_MS						1000
+#define HRB_PERIOD_IN_MS					1000
 
-//===============================================
-//=========== Global Data Structures ============
-//===============================================
+//**********************************************************************************
+// Global Data Structures
+//**********************************************************************************
 Task_Struct hrbTask;
 Char hrbTaskStack[HRB_TASK_STACK_SIZE];
 
 //Pin driver handles
-static PIN_Handle hrbGpioPinHandle;
+static PIN_Handle ledPinHandle;
 
 //Global memory storage for a PIN_Config table
-static PIN_State hrbGpioPinState;
+static PIN_State ledPinState;
 
-//Initial LED pin configuration table
-PIN_Config hrbGpioPinTable[] = {
-Board_DIO0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+//Initial on board LED pin configuration table
+PIN_Config ledPinTable[] = {
+Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 PIN_TERMINATE };
 
-// Clock object for heartbeat
+// Clock object for heart beat
 static Clock_Struct heartbeatClock;
 
-//===============================================
-//======== Local Function Prototypes ============
-//===============================================
+//**********************************************************************************
+// Local Function Prototypes
+//**********************************************************************************
 static void heartbeat_init(void);
 static void greenHeartbeat_taskFxn(UArg a0, UArg a1);
 static void redHeartbeat_SwiFxn(UArg a0);
 
-//===============================================
-//=========== Function Definitions ==============
-//===============================================
+//**********************************************************************************
+// Function Definitions
+//**********************************************************************************
 /**
- * Creates Heartbeat task running at Priority 2.
+ * Creates Heart beat task.
  *
  * @param 	none
  * @return 	none
@@ -88,16 +89,16 @@ void heartbeat_createTask(void) {
 }
 
 /**
- * Initializes hardware for heartbeat and creates required clock.
+ * Initializes hardware for heart beat and creates required clock.
  *
  * @param 	none
  * @return 	none
  */
 static void heartbeat_init(void) {
 	// Open GPIO pins
-	hrbGpioPinHandle = PIN_open(&hrbGpioPinState, hrbGpioPinTable);
-	if (!hrbGpioPinHandle) {
-		Log_error0("Error initializing board Heartbeat GPIO pins");
+	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
+	if (!ledPinHandle) {
+		Log_error0("Error initializing onboard LED pins");
 		Task_exit();
 	}
 
@@ -105,17 +106,16 @@ static void heartbeat_init(void) {
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
 	clockParams.arg = (UArg) 1;
-	clockParams.period = PERIOD_IN_MS * (1000 / Clock_tickPeriod);
+	clockParams.period = HRB_PERIOD_IN_MS * (1000 / Clock_tickPeriod);
 	clockParams.startFlag = TRUE;
 
 	//Dynamically construct task and assign callback function
 	Clock_construct(&heartbeatClock, redHeartbeat_SwiFxn,
-			PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+	HRB_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
 }
 
-
 /**
- * Primary heartbeat task. Calls function to initialize hardware once and blinks green LED at specified period.
+ * Primary heart beat task. Calls function to initialize hardware once and blinks green LED at specified period.
  *
  * @param 	none
  * @return 	none
@@ -125,8 +125,7 @@ static void greenHeartbeat_taskFxn(UArg a0, UArg a1) {
 
 	while (1) {
 		Task_sleep((UInt) a0);
-		PIN_setOutputValue(hrbGpioPinHandle, Board_DIO0,
-				!PIN_getOutputValue(Board_DIO0));
+		PIN_setOutputValue(ledPinHandle, Board_LED0, !PIN_getOutputValue(Board_LED0));
 	}
 }
 
