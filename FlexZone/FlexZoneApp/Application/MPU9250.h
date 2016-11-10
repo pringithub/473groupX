@@ -4,12 +4,15 @@
  * Group: 					GroupX - FlexZone
  * Description:				Defines and prototypes for the low level IMU (MPU9250) driver.
  */
+#ifndef MPU2950_H
+#define MPU2950_H
 
 //**********************************************************************************
 // Header Files
 //**********************************************************************************
 //Standard Header Files
 #include <stdint.h>
+#include "FlexZoneGlobals.h"
 
 //**********************************************************************************
 // Required Definitions
@@ -113,3 +116,5 @@ void _accel_cs_high();
  * @return	uint8_t data from accelerometer's MISO bus.
  */
 uint8_t spiXmitByte(uint8_t data);
+
+#endif /* MPU2950_H */

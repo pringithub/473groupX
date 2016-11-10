@@ -40,7 +40,7 @@
 //**********************************************************************************
 // Required Definitions
 //**********************************************************************************
-#define ACCEL_TASK_PRIORITY				   	2
+#define ACCEL_TASK_PRIORITY					1
 #ifndef ACCEL_TASK_STACK_SIZE
 #define ACCEL_TASK_STACK_SIZE               800
 #endif
@@ -61,14 +61,7 @@ Semaphore_Struct accelSemaphore;
 //Clock Structures
 static Clock_Struct accelClock;
 
-//Pin driver handles
-static PIN_Handle accelledPinHandle;
-//Global memory storage for a PIN_Config table
-static PIN_State accelledPinState;
-//Initial LED pin configuration table
-PIN_Config accelledPinTable[] = {
-Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-PIN_TERMINATE };
+Accel_State myAccel;
 
 //**********************************************************************************
 // Local Function Prototypes
@@ -114,13 +107,6 @@ void accel_init()
 {
 	mpu_spi_init();
 
-//	// Open GPIO pins
-//	accelledPinHandle = PIN_open(&accelledPinState, accelledPinTable);
-//	if (!accelledPinHandle) {
-//		Log_error0("Error initializing on board LED pins");
-//		Task_exit();
-//	}
-
 	//Configure clock object
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
@@ -145,8 +131,14 @@ static void accel_taskFxn(UArg a0, UArg a1) {
 	while (1) {
 		//Wait for SPI Semaphore
 		Semaphore_pend(Semaphore_handle(&accelSemaphore), BIOS_WAIT_FOREVER);
-		uint16_t result = read_MPU(Y_AXIS, ACCEL);
-        Log_info1("Accelerometer Thread: MPU result = %d", (IArg)result);
+		myAccel.ACCEL_X = read_MPU(X_AXIS, ACCEL);
+		myAccel.ACCEL_Y = read_MPU(Y_AXIS, ACCEL);
+		myAccel.ACCEL_Z = read_MPU(Z_AXIS, ACCEL);
+		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
+		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
+		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
+//        Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
+//        Log_info3("Accel Thread:  GYRO (XYZ) \t%d\t%d\t%d", (IArg)xg_res, (IArg)yg_res, (IArg)zg_res);
 	}
 }
 

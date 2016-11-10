@@ -4,10 +4,13 @@
 * Group: 				GroupX - FlexZone
 * Description:			Defines and prototypes for the EMG Thread.
  */
+#ifndef EMG_H
+#define EMG_H
 
 //**********************************************************************************
 // Header Files
 //**********************************************************************************
+#include "FlexZoneGlobals.h"
 
 //**********************************************************************************
 // Required Definitions
@@ -27,3 +30,5 @@
  * @return 	none
  */
 extern void emg_createTask(void);
+
+#endif /* EMG_H */

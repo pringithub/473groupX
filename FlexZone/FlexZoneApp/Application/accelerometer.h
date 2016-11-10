@@ -4,10 +4,13 @@
 * Group: 				GroupX - FlexZone
 * Description:			Defines and prototypes for the Accelerometer Thread.
  */
+#ifndef ACCELEROMETER_H
+#define ACCELEROMETER_H
 
 //**********************************************************************************
 // Header Files
 //**********************************************************************************
+#include "FlexZoneGlobals.h"
 
 //**********************************************************************************
 // Required Definitions
@@ -27,3 +30,5 @@
  * @return 	none
  */
 extern void accel_createTask(void);
+
+#endif /* ACCELEROMETER_H */

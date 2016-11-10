@@ -4,10 +4,13 @@
 * Group: 				GroupX - FlexZone
 * Description:			Defines and prototypes for the Heart beat Thread.
  */
+#ifndef HEARTBEAT_H
+#define HEARTBEAT_H
 
 //**********************************************************************************
 // Header Files
 //**********************************************************************************
+#include "FlexZoneGlobals.h"
 
 //**********************************************************************************
 // Required Definitions
@@ -28,3 +31,4 @@
  */
 extern void heartbeat_createTask(void);
 
+#endif /* HEARTBEAT_H */

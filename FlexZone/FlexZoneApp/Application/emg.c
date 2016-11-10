@@ -11,12 +11,15 @@
 //XDCtools Header Files
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/Diags.h>
+#include <xdc/runtime/Timestamp.h>
+#include <xdc/runtime/Types.h>
 
 //SYS/BIOS Header Files
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/knl/Queue.h>
+#include <ti/sysbios/family/arm/cc26xx/Power.h>
 #include <ti/sysbios/BIOS.h>				//required for BIOS_WAIT_FOREVER in Semaphore_pend();
 
 //TI-RTOS Header Files
@@ -36,33 +39,19 @@
 //**********************************************************************************
 // Required Definitions
 //**********************************************************************************
-#define EMG_TASK_PRIORITY				   	1
+#define EMG_TASK_PRIORITY				   	2
 #ifndef EMG_TASK_STACK_SIZE
 #define EMG_TASK_STACK_SIZE               	800
 #endif
 
-#define EMG_PERIOD_IN_MS					200
-
-//===============================================
-//=========== Global Data Structures ============
-//===============================================
-//Pin driver handles
-static PIN_Handle emgGpioPinHandle;
-static PIN_Handle ledGreenPinHandle;
-
-//Global memory storage for a PIN_Config table
-static PIN_State emgGpioPinState;
-static PIN_State ledGreenPinState;
-
-//Initial LED pin configuration table
-//Initial onboard LED pin configuration table
-PIN_Config ledGreenPinTable[] = {
-Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-PIN_TERMINATE };
-
-PIN_Config emgGpioPinTable[] = {
-Board_DIO30_ANALOG | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,
-PIN_TERMINATE };
+#define EMG_PERIOD_IN_MS					5
+#define EMG_MOVING_WINDOW					1
+#define REP_THRESHHOLD_HIGH 				1900
+#define REP_THRESHHOLD_LOW  				900
+#define EMG_NUMBER_OF_SAMPLES_READING		4
+//**********************************************************************************
+// Global Data Structures
+//**********************************************************************************
 
 //Task Structures
 Task_Struct emgTask;
@@ -75,7 +64,24 @@ Semaphore_Struct emgSemaphore;
 static Clock_Struct emgClock;
 
 //Global data buffer for ADC samples
-uint32_t adc = 0;
+uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
+uint32_t adjustedAdc = 0, uvAdc = 0;
+uint16_t adcCounter = 0;
+
+//EMG processing
+EMG_stats emg_set_stats;
+double lastAverage=-1;
+uint64_t pulseStart=0, pulseEnd=0;
+uint64_t deadStart=0, deadEnd=0;
+uint8_t processingDone = 1;
+uint8_t inRep = 0;
+
+//EMG Pins
+PIN_Handle emgPinHandle;
+PIN_State emgPinState;
+const PIN_Config emgPins[] = {
+Board_DIO23_ANALOG | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,
+PIN_TERMINATE };
 
 //**********************************************************************************
 // Local Function Prototypes
@@ -83,6 +89,7 @@ uint32_t adc = 0;
 static void emg_init(void);
 static void emg_taskFxn(UArg a0, UArg a1);
 static void emgPoll_SwiFxn(UArg a0);
+static void adc_init(void);
 
 //**********************************************************************************
 // Function Definitions
@@ -118,32 +125,8 @@ void emg_createTask(void) {
  * @return 	none
  */
 static void emg_init(void) {
-	// Open GPIO pins
-	emgGpioPinHandle = PIN_open(&emgGpioPinState, emgGpioPinTable);
-	if (!emgGpioPinHandle) {
-		Log_error0("Error initializing board EMG GPIO pins");
-		Task_exit();
-	}
 
-//	ledGreenPinHandle = PIN_open(&ledGreenPinState, ledGreenPinTable);
-//	if (!ledGreenPinHandle) {
-//		Log_error0("Error initializing onboard LED pins");
-//		Task_exit();
-//	}
-
-	//Initialize AUX, ADI, and ADC Clocks
-	AUXWUCClockEnable(AUX_WUC_SOC_CLOCK);
-	AUXWUCClockEnable(AUX_WUC_ADI_CLOCK);
-	AUXWUCClockEnable(AUX_WUC_ADC_CLOCK);
-
-	//Wait for ADC clock to be ready
-	while (AUX_WUC_CLOCK_READY != AUXWUCClockStatus(AUX_WUC_ADC_CLOCK)) {
-	}
-
-	//Configure ADC to use DIO30 (AUXIO7) on manual trigger.
-	AUXADCSelectInput(ADC_COMPB_IN_AUXIO7);
-	AUXADCEnableSync(AUXADC_REF_FIXED, AUXADC_SAMPLE_TIME_10P9_MS, AUXADC_TRIGGER_MANUAL);
-	//AUXADCFlushFifo();
+	adc_init();
 
 	//Configure clock object
 	Clock_Params clockParams;
@@ -153,7 +136,9 @@ static void emg_init(void) {
 	clockParams.startFlag = TRUE;	//Indicates to start immediately
 
 	//Dynamically Construct Clock
-	Clock_construct(&emgClock, emgPoll_SwiFxn, EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+	Clock_construct(&emgClock, emgPoll_SwiFxn,
+			EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+
 }
 
 /**
@@ -165,17 +150,109 @@ static void emg_init(void) {
 static void emg_taskFxn(UArg a0, UArg a1) {
 	//Initialize required hardware & clocks for task.
 	emg_init();
+	uint64_t pulseTickCounter = 0, deadTickCounter = 0;
+	uint32_t timeStart, timeEnd, timeProcessing;
+	uint32_t pulseWidth=0, deadWidth=0;
+	Types_FreqHz freq;
+	Timestamp_getFreq(&freq);
+	float msProcessing;
 
 	while (1) {
 		//Wait for ADC poll and ADC reading
 		Semaphore_pend(Semaphore_handle(&emgSemaphore), BIOS_WAIT_FOREVER);
-        Log_info1("EMG Thread: ADC result = %d", (IArg)adc);
-//		//blink LED based on ADC value
-//		if (adc > 2000) {
-//			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 1);
-//		} else {
-//			PIN_setOutputValue(ledGreenPinHandle, Board_LED1, 0);
-//		}
+//		timeStart = Timestamp_get32();
+		int i;
+		uint32_t repCount = 0;
+		uint16_t pulsePeak = 0;
+
+		for(i = 0; i < EMG_NUMBER_OF_SAMPLES_SLICE; ++i)
+		{
+		    //edge detection for reps
+			if (rawAdc[i] >= REP_THRESHHOLD_HIGH)
+			{
+			  //start of pulse
+			  if (lastAverage >= REP_THRESHHOLD_LOW)
+			  {
+				  inRep = 1;
+
+				  deadWidth = deadTickCounter*EMG_PERIOD_IN_MS;
+				  emg_set_stats.deadWidth[repCount] = deadWidth;
+				  deadTickCounter = 0;
+
+				  pulseTickCounter++;
+
+			  }
+
+			  //calculate local extrema
+			  if ( rawAdc[i] > pulsePeak )
+			  {
+//				  pulsePeak = rawAdc[i];
+			  }
+			  else
+			  {
+//				emg_set_stats.concentricTime[repCount] = millis() - pulseStart;
+			  }
+
+
+			}
+
+
+			//still above threshholding levels
+			//if inRep, will keep going
+			//if !inRep, won't start
+			else if(rawAdc[i] >= REP_THRESHHOLD_LOW)
+			{
+				if( inRep )
+				{
+					pulseTickCounter++;
+				}
+				else
+				{
+					deadTickCounter++;
+				}
+
+			}
+
+
+			else //avg < REP_THRESHHOLD_LOW
+			{
+
+			  //end of pulse
+			  if(lastAverage > 0) {
+				  inRep = 0;
+
+				  pulseWidth = pulseTickCounter*EMG_PERIOD_IN_MS;
+				  pulseTickCounter = 0;
+
+				  deadTickCounter++;
+
+				//get rid of questionable reps
+				if(pulseWidth > 250) {
+					emg_set_stats.pulseWidth[repCount] = pulseWidth;
+					repCount++;
+
+					Log_info1("get big my mans: %u", (IArg)repCount);
+				}
+			  }
+
+			  rawAdc[i] = 0;
+			}
+
+			lastAverage = rawAdc[i];
+		}
+
+		emg_set_stats.numReps = repCount;
+//		Log_info1("repCount bitch:   :)  %d", (IArg)repCount);
+		processingDone = 1;
+
+//		timeEnd = Timestamp_get32();
+//		timeProcessing = timeEnd - timeStart();
+//		msProcessing = (float) timeProcessing/ (float) freq;
+
+		// Calculate adjusted & microvolt ADC values
+		//adjustedAdc = AUXADCAdjustValueForGainAndOffset(rawAdc, AUXADCGetAdjustmentGain(AUXADC_REF_FIXED), AUXADCGetAdjustmentOffset(AUXADC_REF_FIXED));
+		//uvAdc = AUXADCValueToMicrovolts(AUXADC_FIXED_REF_VOLTAGE_NORMAL, adjustedAdc);
+//		Log_info1("EMG Thread: ADC result = %u", (IArg)uvAdc);
 	}
 }
 
@@ -186,10 +263,59 @@ static void emg_taskFxn(UArg a0, UArg a1) {
  * @return 	none
  */
 static void emgPoll_SwiFxn(UArg a0) {
-	//Generate manual ADC trigger
-	AUXADCGenManualTrigger();
-	adc = AUXADCReadFifo();
 
-	//Post semaphore to emg_taskFxn
-	Semaphore_post(Semaphore_handle(&emgSemaphore));
+	if (processingDone)
+	{
+		uint64_t localSum = 0;
+		int i;
+
+		for (i = 0; i < EMG_NUMBER_OF_SAMPLES_READING; i++)
+		{
+			//Generate manual ADC trigger
+			AUXADCGenManualTrigger();
+			localSum += AUXADCReadFifo();
+		}
+
+		rawAdc[adcCounter++] = localSum/EMG_NUMBER_OF_SAMPLES_READING;
+		//Log_info1("EMG Thread: ADC result = %u", (IArg)rawAdc[adcCounter-1]);
+
+		if (EMG_NUMBER_OF_SAMPLES_SLICE == adcCounter)
+		{
+			adcCounter = 0;
+			processingDone = 0;
+			//Post semaphore to emg_taskFxn
+			Semaphore_post(Semaphore_handle(&emgSemaphore));
+		}
+	}
+	else
+	{
+		Log_info0("Missed deadline");
+	}
 }
+
+//**********************************************************************************
+// Low Level Functions
+//**********************************************************************************
+/**
+ * Initialize ADC module
+ *
+ * @param 	none
+ * @return	none
+ */
+void adc_init() {
+	// Set up pins
+	emgPinHandle = PIN_open(&emgPinState, emgPins);
+
+	//Initialize AUX, ADI, and ADC Clocks
+	AUXWUCClockEnable(AUX_WUC_SOC_CLOCK | AUX_WUC_ADI_CLOCK | AUX_WUC_ADC_CLOCK);
+
+	//Wait for ADC clock to be ready
+	while (AUX_WUC_CLOCK_READY != AUXWUCClockStatus(AUX_WUC_ADC_CLOCK))
+		;
+
+	//Configure ADC to use DIO23 (AUXIO7) on manual trigger.
+	AUXADCSelectInput(ADC_COMPB_IN_AUXIO7);
+	AUXADCEnableSync(AUXADC_REF_FIXED, AUXADC_SAMPLE_TIME_2P7_US, AUXADC_TRIGGER_MANUAL);
+}
+
+

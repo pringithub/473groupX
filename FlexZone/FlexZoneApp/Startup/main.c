@@ -114,7 +114,7 @@ int main() {
 	//BlE task - Priority 3
 	FlexZone_createTask();
 	//Heart beat task - Priority 2
-	heartbeat_createTask();
+	//heartbeat_createTask();
 	//EMG task - Priority 1
 	emg_createTask();
 	// MPU2650 Accelerometer (SPI) - Priority 2
