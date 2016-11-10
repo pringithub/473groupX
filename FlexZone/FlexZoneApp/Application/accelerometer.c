@@ -9,10 +9,7 @@
 // Header Files
 //**********************************************************************************
 //XDCtools Header Files
-#include <xdc/std.h>
-#include <xdc/runtime/System.h>
 #include <xdc/runtime/Log.h>
-#include <xdc/runtime/Diags.h>
 
 //SYS/BIOS Header Files
 #include <ti/sysbios/knl/Task.h>
@@ -42,7 +39,7 @@
 //**********************************************************************************
 #define ACCEL_TASK_PRIORITY					1
 #ifndef ACCEL_TASK_STACK_SIZE
-#define ACCEL_TASK_STACK_SIZE               800
+#define ACCEL_TASK_STACK_SIZE               500
 #endif
 
 #define ACCEL_PERIOD_IN_MS					200

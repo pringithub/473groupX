@@ -30,11 +30,11 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 #endif // USE_DEFAULT_USER_CFG
 
 //Home brewed Drivers
+#include "FlexZoneGlobals.h"
 #include "FlexZone.h"
 #include "heartbeat.h"
 #include "emg.h"
 #include "accelerometer.h"
-//#include "accel_low.h"
 
 //TI-RTOS Header Files
 #include <ti/drivers/UART.h>
@@ -111,6 +111,9 @@ int main() {
 	//**********************************************************************************
 	// Thread Initialization
 	//**********************************************************************************
+	//Global LED handles for debugging
+	led_init();
+
 	//BlE task - Priority 3
 	FlexZone_createTask();
 	//Heart beat task - Priority 2

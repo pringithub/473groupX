@@ -10,13 +10,11 @@
 //**********************************************************************************
 //XDCtools Header Files
 #include <xdc/runtime/Log.h>
-#include <xdc/runtime/Diags.h>
 
 //SYS/BIOS Header Files
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Semaphore.h>
-#include <ti/sysbios/knl/Queue.h>
 
 //TI-RTOS Header Files
 #include <ti/drivers/PIN.h>

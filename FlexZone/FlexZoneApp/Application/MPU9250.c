@@ -9,10 +9,7 @@
 // Header Files
 //**********************************************************************************
 //XDCtools Header Files
-#include <xdc/std.h>				//can probably remove these
-#include <xdc/runtime/System.h>		//can probably remove these
 #include <xdc/runtime/Log.h>
-#include <xdc/runtime/Diags.h>
 
 //TI-RTOS Header Files
 #include <ti/drivers/PIN.h>
