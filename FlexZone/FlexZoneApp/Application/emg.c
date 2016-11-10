@@ -10,7 +10,6 @@
 //**********************************************************************************
 //XDCtools Header Files
 #include <xdc/runtime/Log.h>
-#include <xdc/runtime/Diags.h>
 #include <xdc/runtime/Timestamp.h>
 #include <xdc/runtime/Types.h>
 
@@ -18,7 +17,6 @@
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Semaphore.h>
-#include <ti/sysbios/knl/Queue.h>
 #include <ti/sysbios/family/arm/cc26xx/Power.h>
 #include <ti/sysbios/BIOS.h>				//required for BIOS_WAIT_FOREVER in Semaphore_pend();
 
@@ -44,7 +42,7 @@
 #define EMG_TASK_STACK_SIZE               	800
 #endif
 
-#define EMG_PERIOD_IN_MS					5
+#define EMG_PERIOD_IN_MS					20
 #define EMG_MOVING_WINDOW					1
 #define REP_THRESHHOLD_HIGH 				1900
 #define REP_THRESHHOLD_LOW  				900
@@ -82,6 +80,11 @@ PIN_State emgPinState;
 const PIN_Config emgPins[] = {
 Board_DIO23_ANALOG | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,
 PIN_TERMINATE };
+
+//Timing Stuff
+uint32_t timeStart, timeEnd, timeProcessing, usProcessing;
+uint32_t pulseWidth=0, deadWidth=0;
+Types_FreqHz freq;
 
 //**********************************************************************************
 // Local Function Prototypes
@@ -138,7 +141,6 @@ static void emg_init(void) {
 	//Dynamically Construct Clock
 	Clock_construct(&emgClock, emgPoll_SwiFxn,
 			EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
-
 }
 
 /**
@@ -151,16 +153,12 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	//Initialize required hardware & clocks for task.
 	emg_init();
 	uint64_t pulseTickCounter = 0, deadTickCounter = 0;
-	uint32_t timeStart, timeEnd, timeProcessing;
-	uint32_t pulseWidth=0, deadWidth=0;
-	Types_FreqHz freq;
 	Timestamp_getFreq(&freq);
-	float msProcessing;
 
 	while (1) {
 		//Wait for ADC poll and ADC reading
 		Semaphore_pend(Semaphore_handle(&emgSemaphore), BIOS_WAIT_FOREVER);
-//		timeStart = Timestamp_get32();
+		timeStart = Timestamp_get32();
 		int i;
 		uint32_t repCount = 0;
 		uint16_t pulsePeak = 0;
@@ -170,9 +168,9 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		    //edge detection for reps
 			if (rawAdc[i] >= REP_THRESHHOLD_HIGH)
 			{
-			  //start of pulse
-			  if (lastAverage >= REP_THRESHHOLD_LOW)
-			  {
+				//start of pulse
+				if (lastAverage >= REP_THRESHHOLD_LOW)
+				{
 				  inRep = 1;
 
 				  deadWidth = deadTickCounter*EMG_PERIOD_IN_MS;
@@ -180,27 +178,22 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 				  deadTickCounter = 0;
 
 				  pulseTickCounter++;
+				}
 
-			  }
-
-			  //calculate local extrema
-			  if ( rawAdc[i] > pulsePeak )
-			  {
-//				  pulsePeak = rawAdc[i];
-			  }
-			  else
-			  {
-//				emg_set_stats.concentricTime[repCount] = millis() - pulseStart;
-			  }
-
-
+				//calculate local extrema
+				if ( rawAdc[i] > pulsePeak )
+				{
+//					pulsePeak = rawAdc[i];
+				}
+				else
+				{
+//					emg_set_stats.concentricTime[repCount] = millis() - pulseStart;
+				}
 			}
-
-
 			//still above threshholding levels
 			//if inRep, will keep going
 			//if !inRep, won't start
-			else if(rawAdc[i] >= REP_THRESHHOLD_LOW)
+			else if (rawAdc[i] >= REP_THRESHHOLD_LOW)
 			{
 				if( inRep )
 				{
@@ -212,42 +205,39 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 				}
 
 			}
-
-
 			else //avg < REP_THRESHHOLD_LOW
 			{
+				//end of pulse
+				if(lastAverage > 0)
+				{
+					inRep = 0;
 
-			  //end of pulse
-			  if(lastAverage > 0) {
-				  inRep = 0;
+					pulseWidth = pulseTickCounter*EMG_PERIOD_IN_MS;
+					pulseTickCounter = 0;
 
-				  pulseWidth = pulseTickCounter*EMG_PERIOD_IN_MS;
-				  pulseTickCounter = 0;
+					deadTickCounter++;
 
-				  deadTickCounter++;
+					//get rid of questionable reps
+					if(pulseWidth > 250)
+					{
+						emg_set_stats.pulseWidth[repCount] = pulseWidth;
+						repCount++;
 
-				//get rid of questionable reps
-				if(pulseWidth > 250) {
-					emg_set_stats.pulseWidth[repCount] = pulseWidth;
-					repCount++;
-
-					Log_info1("get big my mans: %u", (IArg)repCount);
+						Log_info1("get big my mans: %u", (IArg)repCount);
+					}
 				}
-			  }
-
-			  rawAdc[i] = 0;
+				rawAdc[i] = 0;
 			}
-
 			lastAverage = rawAdc[i];
 		}
 
 		emg_set_stats.numReps = repCount;
-//		Log_info1("repCount bitch:   :)  %d", (IArg)repCount);
 		processingDone = 1;
 
-//		timeEnd = Timestamp_get32();
-//		timeProcessing = timeEnd - timeStart();
-//		msProcessing = (float) timeProcessing/ (float) freq;
+		timeEnd = Timestamp_get32();
+		timeProcessing = timeEnd - timeStart;
+		usProcessing = (timeProcessing*1000000)/freq.lo;
+		Log_info1("EMG Thread: Processing Time = %u", (IArg)usProcessing);
 
 		// Calculate adjusted & microvolt ADC values
 		//adjustedAdc = AUXADCAdjustValueForGainAndOffset(rawAdc, AUXADCGetAdjustmentGain(AUXADC_REF_FIXED), AUXADCGetAdjustmentOffset(AUXADC_REF_FIXED));
