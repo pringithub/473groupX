@@ -239,6 +239,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		usProcessing = (timeProcessing*1000000)/freq.lo;
 		Log_info1("EMG Thread: Processing Time = %u", (IArg)usProcessing);
 
+
 		// Calculate adjusted & microvolt ADC values
 		//adjustedAdc = AUXADCAdjustValueForGainAndOffset(rawAdc, AUXADCGetAdjustmentGain(AUXADC_REF_FIXED), AUXADCGetAdjustmentOffset(AUXADC_REF_FIXED));
 		//uvAdc = AUXADCValueToMicrovolts(AUXADC_FIXED_REF_VOLTAGE_NORMAL, adjustedAdc);
