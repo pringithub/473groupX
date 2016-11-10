@@ -2,7 +2,7 @@
 * Application Name:		FlexZone (Application)
 * File Name: 			heartbeat.h
 * Group: 				GroupX - FlexZone
-* Description:			Defines and prototypes for the Heart beat Thread.
+* Description:			Defines and prototypes for the Heart beat Thread. Provides drivers for onboard LEDs.
  */
 #ifndef HEARTBEAT_H
 #define HEARTBEAT_H
@@ -30,5 +30,13 @@
  * @return 	none
  */
 extern void heartbeat_createTask(void);
+
+/**
+ * Initializes LED pins.
+ *
+ * @param 	none
+ * @return 	none
+ */
+extern void led_init();
 
 #endif /* HEARTBEAT_H */

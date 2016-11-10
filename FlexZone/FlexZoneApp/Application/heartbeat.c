@@ -2,7 +2,7 @@
  * Application Name:	FlexZone (Application)
  * File Name: 			heartbeat.c
  * Group: 				GroupX - FlexZone
- * Description:			Implementation file the Heart beat Thread.
+ * Description:			Implementation file the Heart beat Thread. Provides drivers for onboard LEDs.
  */
 
 //**********************************************************************************
@@ -44,15 +44,20 @@
 Task_Struct hrbTask;
 Char hrbTaskStack[HRB_TASK_STACK_SIZE];
 
-//Pin driver handles
-static PIN_Handle ledPinHandle;
+////Pin driver handles
+//extern PIN_Handle ledPinHandle;
+//
+////Global memory storage for a PIN_Config table
+//extern PIN_State ledPinState;
+//
+////Initial on board LED pin configuration table
+//extern PIN_Config ledPinTable[];
 
-//Global memory storage for a PIN_Config table
-static PIN_State ledPinState;
-
-//Initial on board LED pin configuration table
+PIN_Handle ledPinHandle;
+PIN_State ledPinState;
 PIN_Config ledPinTable[] = {
 Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 PIN_TERMINATE };
 
 // Clock object for heart beat
@@ -95,12 +100,6 @@ void heartbeat_createTask(void) {
  * @return 	none
  */
 static void heartbeat_init(void) {
-	// Open GPIO pins
-	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
-	if (!ledPinHandle) {
-		Log_error0("Error initializing onboard LED pins");
-		Task_exit();
-	}
 
 	// Create the clock object
 	Clock_Params clockParams;
@@ -137,4 +136,19 @@ static void greenHeartbeat_taskFxn(UArg a0, UArg a1) {
  */
 static void redHeartbeat_SwiFxn(UArg a0) {
 	//PIN_setOutputValue(ledPinHandle, Board_LED0, !PIN_getOutputValue(Board_LED0));
+}
+
+/**
+ * Initializes LED pins.
+ *
+ * @param 	none
+ * @return 	none
+ */
+void led_init(void)
+{
+	// Open GPIO pins
+	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
+	if (!ledPinHandle) {
+		Log_error0("Error initializing onboard LED pins");
+	}
 }

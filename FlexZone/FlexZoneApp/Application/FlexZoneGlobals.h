@@ -11,7 +11,11 @@
 //**********************************************************************************
 // Header Files
 //**********************************************************************************
+//SYS/BIOS Header Files
 #include <ti/sysbios/knl/Semaphore.h>
+
+//TI-RTOS Header Files
+#include <ti/drivers/PIN.h>
 
 //**********************************************************************************
 // Required Definitions
@@ -40,6 +44,7 @@ typedef struct {
 	uint32_t eccentricTime[20];
 	uint8_t numReps;
 } EMG_stats;
+
 //**********************************************************************************
 // Globally Scoped Variables (for RTOS: Semaphores, Mailboxes, Queues, Data Structures)
 //**********************************************************************************
@@ -54,5 +59,14 @@ extern Semaphore_Struct emgSemaphore;
 extern uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
 extern uint32_t adjustedAdc, uvAdc;
 
+//LEDS
+extern PIN_Handle ledPinHandle;
+extern PIN_State ledPinState;
+extern PIN_Config ledPinTable[];
+
+//**********************************************************************************
+// General Functions
+//**********************************************************************************
+extern void led_init(void);
 
 #endif /* FLEXZONE_GLOBALS_H */
