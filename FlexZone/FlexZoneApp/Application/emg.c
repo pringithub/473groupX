@@ -50,7 +50,6 @@
 //**********************************************************************************
 // Global Data Structures
 //**********************************************************************************
-
 //Task Structures
 Task_Struct emgTask;
 Char emgTaskStack[EMG_TASK_STACK_SIZE];
@@ -63,7 +62,7 @@ static Clock_Struct emgClock;
 
 //Global data buffer for ADC samples
 uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
-uint32_t adjustedAdc = 0, uvAdc = 0;
+//uint32_t adjustedAdc = 0, uvAdc = 0;
 uint16_t adcCounter = 0;
 
 //EMG processing
@@ -154,14 +153,14 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	emg_init();
 	uint64_t pulseTickCounter = 0, deadTickCounter = 0;
 	Timestamp_getFreq(&freq);
+	uint32_t repCount = 0;
+	uint16_t pulsePeak = 0;
 
 	while (1) {
 		//Wait for ADC poll and ADC reading
 		Semaphore_pend(Semaphore_handle(&emgSemaphore), BIOS_WAIT_FOREVER);
 		timeStart = Timestamp_get32();
 		int i;
-		uint32_t repCount = 0;
-		uint16_t pulsePeak = 0;
 
 		for(i = 0; i < EMG_NUMBER_OF_SAMPLES_SLICE; ++i)
 		{
@@ -190,7 +189,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 //					emg_set_stats.concentricTime[repCount] = millis() - pulseStart;
 				}
 			}
-			//still above threshholding levels
+			//still above thresholding levels
 			//if inRep, will keep going
 			//if !inRep, won't start
 			else if (rawAdc[i] >= REP_THRESHHOLD_LOW)
@@ -223,7 +222,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 						emg_set_stats.pulseWidth[repCount] = pulseWidth;
 						repCount++;
 
-						Log_info1("get big my mans: %u", (IArg)repCount);
+						Log_info1("get big my mans: %u", (IArg) repCount);
 					}
 				}
 				rawAdc[i] = 0;
@@ -237,7 +236,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		timeEnd = Timestamp_get32();
 		timeProcessing = timeEnd - timeStart;
 		usProcessing = (timeProcessing*1000000)/freq.lo;
-		Log_info1("EMG Thread: Processing Time = %u", (IArg)usProcessing);
+		//Log_info1("EMG Thread: Processing Time = %u", (IArg)usProcessing);
 
 
 		// Calculate adjusted & microvolt ADC values

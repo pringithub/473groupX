@@ -32,17 +32,29 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 //Home brewed Drivers
 #include "FlexZoneGlobals.h"
 #include "FlexZone.h"
-#include "heartbeat.h"
+//#include "heartbeat.h"
 #include "emg.h"
 #include "accelerometer.h"
 
 //TI-RTOS Header Files
 #include <ti/drivers/UART.h>
 #include <uart_logs.h>
+#include <ti/drivers/PIN.h>
 
 //**********************************************************************************
 // Required Definitions
 //**********************************************************************************
+
+//**********************************************************************************
+// Global Data Structures
+//**********************************************************************************
+//LED Handles
+PIN_Handle ledPinHandle;
+PIN_State ledPinState;
+PIN_Config ledPinTable[] = {
+Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+PIN_TERMINATE };
 
 //**********************************************************************************
 // Function Definitions
@@ -80,6 +92,21 @@ Void smallErrorHook(Error_Block *eb) {
 void halAssertHandler(void) {
 	for (;;)
 		;
+}
+
+/**
+ * Initializes LED pins.
+ *
+ * @param 	none
+ * @return 	none
+ */
+void led_init(void)
+{
+	// Open GPIO pins
+	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
+	if (!ledPinHandle) {
+		Log_error0("Error initializing onboard LED pins");
+	}
 }
 
 //**********************************************************************************
@@ -130,3 +157,5 @@ int main() {
 
 	return 0;
 }
+
+

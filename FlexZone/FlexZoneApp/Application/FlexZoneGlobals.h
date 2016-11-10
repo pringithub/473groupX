@@ -57,7 +57,7 @@ extern Semaphore_Struct accelSemaphore;
 //EMG Thread
 extern Semaphore_Struct emgSemaphore;
 extern uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
-extern uint32_t adjustedAdc, uvAdc;
+extern EMG_stats emg_set_stats;
 
 //LEDS
 extern PIN_Handle ledPinHandle;
