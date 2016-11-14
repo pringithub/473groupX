@@ -63,17 +63,17 @@ extern "C"
 #define EMG_SERVICE_SERV_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
 
 // String Characteristic defines
-#define EMG_STRING_ID                 0
-#define EMG_STRING_UUID               0x1141
-#define EMG_STRING_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
-#define EMG_STRING_LEN                40
-#define EMG_STRING_LEN_MIN            0
+#define EMG_CONFIG_ID                 0
+#define EMG_CONFIG_UUID               0x1141
+#define EMG_CONFIG_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
+#define EMG_CONFIG_LEN                40
+#define EMG_CONFIG_LEN_MIN            0
 
 // Stream Characteristic defines
 #define EMG_STREAM_ID                 1
 #define EMG_STREAM_UUID               0x1142
 #define EMG_STREAM_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
-#define EMG_STREAM_LEN                20
+#define EMG_STREAM_LEN                40
 #define EMG_STREAM_LEN_MIN            0
 
 /*********************************************************************

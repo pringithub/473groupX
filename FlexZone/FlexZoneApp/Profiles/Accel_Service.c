@@ -1,5 +1,5 @@
 /******************************************************************************
- * Filename:       Data_Service.c
+ * Filename:       Accel_Service.c
  *
  * Description:    This file contains the implementation of the service.
  *
@@ -84,10 +84,10 @@ CONST uint8_t AccelServiceUUID[ATT_UUID_SIZE] =
   ACCEL_SERVICE_SERV_UUID_BASE128(ACCEL_SERVICE_SERV_UUID)
 };
 
-// String UUID
-CONST uint8_t accel_StringUUID[ATT_UUID_SIZE] =
+// Config UUID
+CONST uint8_t accel_ConfigUUID[ATT_UUID_SIZE] =
 {
-  ACCEL_STRING_UUID_BASE128(ACCEL_STRING_UUID)
+  ACCEL_CONFIG_UUID_BASE128(ACCEL_CONFIG_UUID)
 };
 
 // Stream UUID
@@ -111,14 +111,14 @@ static uint8_t accel_icall_rsp_task_id = INVALID_TASK_ID;
 // Service declaration
 static CONST gattAttrType_t AccelServiceDecl = { ATT_UUID_SIZE, AccelServiceUUID };
 
-// Characteristic "String" Properties (for declaration)
-static uint8_t accel_StringProps = GATT_PROP_READ | GATT_PROP_WRITE;
+// Characteristic "Config" Properties (for declaration)
+static uint8_t accel_ConfigProps = GATT_PROP_READ | GATT_PROP_WRITE;
 
-// Characteristic "String" Value variable
-static uint8_t accel_StringVal[ACCEL_STRING_LEN] = {0};
+// Characteristic "Config" Value variable
+static uint8_t accel_ConfigVal[ACCEL_CONFIG_LEN] = {0};
 
-// Length of data in characteristic "String" Value variable, initialized to minimal size.
-static uint16_t accel_StringValLen = ACCEL_STRING_LEN_MIN;
+// Length of data in characteristic "Config" Value variable, initialized to minimal size.
+static uint16_t accel_ConfigValLen = ACCEL_CONFIG_LEN_MIN;
 
 
 // Characteristic "Stream" Properties (for declaration)
@@ -133,7 +133,8 @@ static uint16_t accel_StreamValLen = ACCEL_STREAM_LEN_MIN;
 // Characteristic "Stream" Client Characteristic Configuration Descriptor
 static gattCharCfg_t *accel_StreamConfig;
 
-
+static char accel_UserStreamString[] = "Accelerometer Data";
+static char accel_UserConfigString[] = "Accelerometer Config";
 
 /*********************************************************************
 * Profile Attributes - Table
@@ -148,20 +149,29 @@ static gattAttribute_t Accel_ServiceAttrTbl[] =
     0,
     (uint8_t *)&AccelServiceDecl
   },
-    // String Characteristic Declaration
+    // Config Characteristic Declaration
     {
       { ATT_BT_UUID_SIZE, characterUUID },
       GATT_PERMIT_READ,
       0,
-      &accel_StringProps
+      &accel_ConfigProps
     },
-      // String Characteristic Value
+      // Config Characteristic Value
       {
-        { ATT_UUID_SIZE, accel_StringUUID },
+        { ATT_UUID_SIZE, accel_ConfigUUID },
         GATT_PERMIT_READ | GATT_PERMIT_WRITE,
         0,
-        accel_StringVal
+        accel_ConfigVal
       },
+
+	  // Config CUDs
+		{
+		  { ATT_BT_UUID_SIZE, charUserDescUUID },
+		  GATT_PERMIT_READ,
+		  0,
+		  (uint8_t *)&accel_UserConfigString
+		},
+
     // Stream Characteristic Declaration
     {
       { ATT_BT_UUID_SIZE, characterUUID },
@@ -183,6 +193,14 @@ static gattAttribute_t Accel_ServiceAttrTbl[] =
         0,
         (uint8_t *)&accel_StreamConfig
       },
+
+	  // Stream CUDs
+		{
+		  { ATT_BT_UUID_SIZE, charUserDescUUID },
+		  GATT_PERMIT_READ,
+		  0,
+		  (uint8_t *)&accel_UserStreamString
+		},
 };
 
 /*********************************************************************
@@ -284,11 +302,11 @@ bStatus_t AccelService_SetParameter( uint8_t param, uint16_t len, void *value )
 
   switch ( param )
   {
-    case ACCEL_STRING_ID:
-      pAttrVal  =  accel_StringVal;
-      pValLen   = &accel_StringValLen;
-      valMinLen =  ACCEL_STRING_LEN_MIN;
-      valMaxLen =  ACCEL_STRING_LEN;
+    case ACCEL_CONFIG_ID:
+      pAttrVal  =  accel_ConfigVal;
+      pValLen   = &accel_ConfigValLen;
+      valMinLen =  ACCEL_CONFIG_LEN_MIN;
+      valMaxLen =  ACCEL_CONFIG_LEN;
       Log_info2("SetParameter : %s len: %d", (IArg)"String", (IArg)len);
       break;
 
@@ -353,9 +371,9 @@ bStatus_t AccelService_GetParameter( uint8_t param, uint16_t *len, void *value )
   bStatus_t ret = SUCCESS;
   switch ( param )
   {
-    case ACCEL_STRING_ID:
-      *len = MIN(*len, accel_StringValLen);
-      memcpy(value, accel_StringVal, *len);
+    case ACCEL_CONFIG_ID:
+      *len = MIN(*len, accel_ConfigValLen);
+      memcpy(value, accel_ConfigVal, *len);
       Log_info2("GetParameter : %s returning %d bytes", (IArg)"String", (IArg)*len);
       break;
 
@@ -393,8 +411,8 @@ static uint8_t Accel_Service_findCharParamId(gattAttribute_t *pAttr)
     return Accel_Service_findCharParamId(pAttr - 1); // Assume the value attribute precedes CCCD and recurse
 
   // Is this attribute in "String"?
-  else if ( ATT_UUID_SIZE == pAttr->type.len && !memcmp(pAttr->type.uuid, accel_StringUUID, pAttr->type.len))
-    return ACCEL_STRING_ID;
+  else if ( ATT_UUID_SIZE == pAttr->type.len && !memcmp(pAttr->type.uuid, accel_ConfigUUID, pAttr->type.len))
+    return ACCEL_CONFIG_ID;
 
   // Is this attribute in "Stream"?
   else if ( ATT_UUID_SIZE == pAttr->type.len && !memcmp(pAttr->type.uuid, accel_StreamUUID, pAttr->type.len))
@@ -431,8 +449,8 @@ static bStatus_t Accel_Service_ReadAttrCB( uint16_t connHandle, gattAttribute_t 
   paramID = Accel_Service_findCharParamId( pAttr );
   switch ( paramID )
   {
-    case ACCEL_STRING_ID:
-      valueLen = accel_StringValLen;
+    case ACCEL_CONFIG_ID:
+      valueLen = accel_ConfigValLen;
 
       Log_info4("ReadAttrCB : %s connHandle: %d offset: %d method: 0x%02x",
                  (IArg)"String",
@@ -520,10 +538,10 @@ static bStatus_t Accel_Service_WriteAttrCB( uint16_t connHandle, gattAttribute_t
   paramID = Accel_Service_findCharParamId( pAttr );
   switch ( paramID )
   {
-    case ACCEL_STRING_ID:
-      writeLenMin  = ACCEL_STRING_LEN_MIN;
-      writeLenMax  = ACCEL_STRING_LEN;
-      pValueLenVar = &accel_StringValLen;
+    case ACCEL_CONFIG_ID:
+      writeLenMin  = ACCEL_CONFIG_LEN_MIN;
+      writeLenMax  = ACCEL_CONFIG_LEN;
+      pValueLenVar = &accel_ConfigValLen;
 
       Log_info5("WriteAttrCB : %s connHandle(%d) len(%d) offset(%d) method(0x%02x)",
                  (IArg)"String",

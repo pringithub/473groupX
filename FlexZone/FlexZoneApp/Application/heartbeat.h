@@ -31,12 +31,4 @@
  */
 extern void heartbeat_createTask(void);
 
-/**
- * Initializes LED pins.
- *
- * @param 	none
- * @return 	none
- */
-extern void led_init();
-
 #endif /* HEARTBEAT_H */

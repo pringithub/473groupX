@@ -155,23 +155,23 @@ static uint8 devInfoSystemId[DEVINFO_SYSTEM_ID_LEN] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 // Model Number String characteristic
 static uint8 devInfoModelNumberProps = GATT_PROP_READ;
-static uint8 devInfoModelNumber[DEVINFO_STR_ATTR_LEN+1] = "0p01";
+static uint8 devInfoModelNumber[DEVINFO_STR_ATTR_LEN+1] = "0.01";
 
 // Serial Number String characteristic
 static uint8 devInfoSerialNumberProps = GATT_PROP_READ;
-static uint8 devInfoSerialNumber[DEVINFO_STR_ATTR_LEN+1] = "0p01";
+static uint8 devInfoSerialNumber[DEVINFO_STR_ATTR_LEN+1] = "473.01";
 
 // Firmware Revision String characteristic
 static uint8 devInfoFirmwareRevProps = GATT_PROP_READ;
-static uint8 devInfoFirmwareRev[DEVINFO_STR_ATTR_LEN+1] = "0p01";
+static uint8 devInfoFirmwareRev[DEVINFO_STR_ATTR_LEN+1] = "0.07";
 
 // Hardware Revision String characteristic
 static uint8 devInfoHardwareRevProps = GATT_PROP_READ;
-static uint8 devInfoHardwareRev[DEVINFO_STR_ATTR_LEN+1] = "0p05";
+static uint8 devInfoHardwareRev[DEVINFO_STR_ATTR_LEN+1] = "0.01";
 
 // Software Revision String characteristic
 static uint8 devInfoSoftwareRevProps = GATT_PROP_READ;
-static uint8 devInfoSoftwareRev[DEVINFO_STR_ATTR_LEN+1] = "0p01";
+static uint8 devInfoSoftwareRev[DEVINFO_STR_ATTR_LEN+1] = "0.04";
 
 // Manufacturer Name String characteristic
 static uint8 devInfoMfrNameProps = GATT_PROP_READ;

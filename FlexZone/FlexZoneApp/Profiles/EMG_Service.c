@@ -1,5 +1,5 @@
 /******************************************************************************
- * Filename:       Data_Service.c
+ * Filename:       EMG_Service.c
  *
  * Description:    This file contains the implementation of the service.
  *
@@ -85,9 +85,9 @@ CONST uint8_t EMGServiceUUID[ATT_UUID_SIZE] =
 };
 
 // String UUID
-CONST uint8_t emg_StringUUID[ATT_UUID_SIZE] =
+CONST uint8_t emg_configUUID[ATT_UUID_SIZE] =
 {
-  EMG_STRING_UUID_BASE128(EMG_STRING_UUID)
+  EMG_CONFIG_UUID_BASE128(EMG_CONFIG_UUID)
 };
 
 // Stream UUID
@@ -112,13 +112,13 @@ static uint8_t emg_icall_rsp_task_id = INVALID_TASK_ID;
 static CONST gattAttrType_t EMGServiceDecl = { ATT_UUID_SIZE, EMGServiceUUID };
 
 // Characteristic "String" Properties (for declaration)
-static uint8_t emg_StringProps = GATT_PROP_READ | GATT_PROP_WRITE;
+static uint8_t emg_ConfigProps = GATT_PROP_READ | GATT_PROP_WRITE;
 
 // Characteristic "String" Value variable
-static uint8_t emg_StringVal[EMG_STRING_LEN] = {0};
+static uint8_t emg_ConfigVal[EMG_CONFIG_LEN] = {0};
 
 // Length of data in characteristic "String" Value variable, initialized to minimal size.
-static uint16_t emg_StringValLen = EMG_STRING_LEN_MIN;
+static uint16_t emg_ConfigValLen = EMG_CONFIG_LEN_MIN;
 
 
 // Characteristic "Stream" Properties (for declaration)
@@ -133,7 +133,8 @@ static uint16_t emg_StreamValLen = EMG_STREAM_LEN_MIN;
 // Characteristic "Stream" Client Characteristic Configuration Descriptor
 static gattCharCfg_t *emg_StreamConfig;
 
-
+static char emg_UserStreamString[] = "EMG Data";
+static char emg_UserConfigString[] = "EMG Config";
 
 /*********************************************************************
 * Profile Attributes - Table
@@ -153,15 +154,23 @@ static gattAttribute_t EMG_ServiceAttrTbl[] =
       { ATT_BT_UUID_SIZE, characterUUID },
       GATT_PERMIT_READ,
       0,
-      &emg_StringProps
+      &emg_ConfigProps
     },
-      // String Characteristic Value
+      // Config Characteristic Value
       {
-        { ATT_UUID_SIZE, emg_StringUUID },
+        { ATT_UUID_SIZE, emg_configUUID },
         GATT_PERMIT_READ | GATT_PERMIT_WRITE,
         0,
-        emg_StringVal
+        emg_ConfigVal
       },
+	  // config CUD
+		{
+		  { ATT_BT_UUID_SIZE, charUserDescUUID },
+		  GATT_PERMIT_READ,
+		  0,
+		  (uint8_t *)&emg_UserConfigString
+		},
+
     // Stream Characteristic Declaration
     {
       { ATT_BT_UUID_SIZE, characterUUID },
@@ -183,6 +192,14 @@ static gattAttribute_t EMG_ServiceAttrTbl[] =
         0,
         (uint8_t *)&emg_StreamConfig
       },
+
+	  // Stream CUD
+		{
+		  { ATT_BT_UUID_SIZE, charUserDescUUID },
+		  GATT_PERMIT_READ,
+		  0,
+		  (uint8_t *)&emg_UserStreamString
+		},
 };
 
 /*********************************************************************
@@ -284,11 +301,11 @@ bStatus_t EMGService_SetParameter( uint8_t param, uint16_t len, void *value )
 
   switch ( param )
   {
-    case EMG_STRING_ID:
-      pAttrVal  =  emg_StringVal;
-      pValLen   = &emg_StringValLen;
-      valMinLen =  EMG_STRING_LEN_MIN;
-      valMaxLen =  EMG_STRING_LEN;
+    case EMG_CONFIG_ID:
+      pAttrVal  =  emg_ConfigVal;
+      pValLen   = &emg_ConfigValLen;
+      valMinLen =  EMG_CONFIG_LEN_MIN;
+      valMaxLen =  EMG_CONFIG_LEN;
       Log_info2("SetParameter : %s len: %d", (IArg)"String", (IArg)len);
       break;
 
@@ -353,9 +370,9 @@ bStatus_t EMGService_GetParameter( uint8_t param, uint16_t *len, void *value )
   bStatus_t ret = SUCCESS;
   switch ( param )
   {
-    case EMG_STRING_ID:
-      *len = MIN(*len, emg_StringValLen);
-      memcpy(value, emg_StringVal, *len);
+    case EMG_CONFIG_ID:
+      *len = MIN(*len, emg_ConfigValLen);
+      memcpy(value, emg_ConfigVal, *len);
       Log_info2("GetParameter : %s returning %d bytes", (IArg)"String", (IArg)*len);
       break;
 
@@ -393,8 +410,8 @@ static uint8_t EMG_Service_findCharParamId(gattAttribute_t *pAttr)
     return EMG_Service_findCharParamId(pAttr - 1); // Assume the value attribute precedes CCCD and recurse
 
   // Is this attribute in "String"?
-  else if ( ATT_UUID_SIZE == pAttr->type.len && !memcmp(pAttr->type.uuid, emg_StringUUID, pAttr->type.len))
-    return EMG_STRING_ID;
+  else if ( ATT_UUID_SIZE == pAttr->type.len && !memcmp(pAttr->type.uuid, emg_configUUID, pAttr->type.len))
+    return EMG_CONFIG_ID;
 
   // Is this attribute in "Stream"?
   else if ( ATT_UUID_SIZE == pAttr->type.len && !memcmp(pAttr->type.uuid, emg_StreamUUID, pAttr->type.len))
@@ -431,8 +448,8 @@ static bStatus_t EMG_Service_ReadAttrCB( uint16_t connHandle, gattAttribute_t *p
   paramID = EMG_Service_findCharParamId( pAttr );
   switch ( paramID )
   {
-    case EMG_STRING_ID:
-      valueLen = emg_StringValLen;
+    case EMG_CONFIG_ID:
+      valueLen = emg_ConfigValLen;
 
       Log_info4("ReadAttrCB : %s connHandle: %d offset: %d method: 0x%02x",
                  (IArg)"String",
@@ -520,10 +537,10 @@ static bStatus_t EMG_Service_WriteAttrCB( uint16_t connHandle, gattAttribute_t *
   paramID = EMG_Service_findCharParamId( pAttr );
   switch ( paramID )
   {
-    case EMG_STRING_ID:
-      writeLenMin  = EMG_STRING_LEN_MIN;
-      writeLenMax  = EMG_STRING_LEN;
-      pValueLenVar = &emg_StringValLen;
+    case EMG_CONFIG_ID:
+      writeLenMin  = EMG_CONFIG_LEN_MIN;
+      writeLenMax  = EMG_CONFIG_LEN;
+      pValueLenVar = &emg_ConfigValLen;
 
       Log_info5("WriteAttrCB : %s connHandle(%d) len(%d) offset(%d) method(0x%02x)",
                  (IArg)"String",

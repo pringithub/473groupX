@@ -20,6 +20,8 @@
 //**********************************************************************************
 // Required Definitions
 //**********************************************************************************
+//#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
+
 //EMG
 #define EMG_NUMBER_OF_SAMPLES_SLICE			50
 
@@ -43,8 +45,22 @@ typedef struct {
 	//time from peak of rep to end
 	uint32_t eccentricTime[20];
 	uint8_t numReps;
+	uint8_t setDone;
 } EMG_stats;
 
+typedef enum
+{
+	USER_APP_ERROR_OK = 0,			/* No error at user application  */
+	USER_APP_ERROR_INVALID_LEN,		/* Input parameters have invalid length  */
+	USER_APP_ERROR_INVALID_PARAM,	/* Input parameters are not correct  */
+	USER_APP_ERROR_UNKNOWN,			/* Unknown error  */
+} user_app_error_type_t;
+
+typedef enum
+{
+	APP_PACKET_TYPE_DATA = 0,		/* Packet contains data  */
+	APP_PACKET_TYPE_CONFIG = 1,		/* Packet contains configuration  */
+} app_pkt_type_t;
 //**********************************************************************************
 // Globally Scoped Variables (for RTOS: Semaphores, Mailboxes, Queues, Data Structures)
 //**********************************************************************************
@@ -58,6 +74,7 @@ extern Semaphore_Struct accelSemaphore;
 extern Semaphore_Struct emgSemaphore;
 extern uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
 extern EMG_stats emg_set_stats;
+extern EMG_stats emgSets[10];
 
 //LEDS
 extern PIN_Handle ledPinHandle;
@@ -68,5 +85,8 @@ extern PIN_Config ledPinTable[];
 // General Functions
 //**********************************************************************************
 extern void led_init(void);
+
+extern user_app_error_type_t user_sendEmgPacket(uint8_t* pData, uint8_t len, app_pkt_type_t packetType);
+extern user_app_error_type_t user_sendAccelPacket(uint8_t* pData, uint8_t len, app_pkt_type_t packetType);
 
 #endif /* FLEXZONE_GLOBALS_H */

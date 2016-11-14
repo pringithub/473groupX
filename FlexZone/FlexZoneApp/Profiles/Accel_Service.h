@@ -63,17 +63,17 @@ extern "C"
 #define ACCEL_SERVICE_SERV_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
 
 // String Characteristic defines
-#define ACCEL_STRING_ID                 0
-#define ACCEL_STRING_UUID               0x1131
-#define ACCEL_STRING_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
-#define ACCEL_STRING_LEN                40
-#define ACCEL_STRING_LEN_MIN            0
+#define ACCEL_CONFIG_ID                 0
+#define ACCEL_CONFIG_UUID               0x1131
+#define ACCEL_CONFIG_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
+#define ACCEL_CONFIG_LEN                40
+#define ACCEL_CONFIG_LEN_MIN            0
 
 // Stream Characteristic defines
 #define ACCEL_STREAM_ID                 1
 #define ACCEL_STREAM_UUID               0x1132
 #define ACCEL_STREAM_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
-#define ACCEL_STREAM_LEN                20
+#define ACCEL_STREAM_LEN                40
 #define ACCEL_STREAM_LEN_MIN            0
 
 /*********************************************************************

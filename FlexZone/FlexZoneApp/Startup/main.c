@@ -31,8 +31,8 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 
 //Home brewed Drivers
 #include "FlexZoneGlobals.h"
-#include "FlexZone.h"
-//#include "heartbeat.h"
+#include "FlexZoneBLE.h"
+#include "heartbeat.h"
 #include "emg.h"
 #include "accelerometer.h"
 
@@ -105,7 +105,7 @@ void led_init(void)
 	// Open GPIO pins
 	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
 	if (!ledPinHandle) {
-		Log_error0("Error initializing onboard LED pins");
+		Log_error0("Error initializing on board LED pins");
 	}
 }
 
@@ -113,6 +113,7 @@ void led_init(void)
 // Main
 //**********************************************************************************
 int main() {
+
 	PIN_init(BoardGpioInitTable);
 
 #ifndef POWER_SAVING
@@ -144,11 +145,11 @@ int main() {
 	//BlE task - Priority 3
 	FlexZone_createTask();
 	//Heart beat task - Priority 2
-	//heartbeat_createTask();
+	heartbeat_createTask();
 	//EMG task - Priority 1
 	emg_createTask();
 	// MPU2650 Accelerometer (SPI) - Priority 2
-	accel_createTask();
+	//accel_createTask();
 
 	//**********************************************************************************
 	// Enable Interrupts & start SYS/BIOS
