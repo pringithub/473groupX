@@ -21,6 +21,7 @@
 
 //Board Specific Header Files
 #include "Board.h"
+#include "FlexZoneGlobals.h"
 #include "heartbeat.h"
 
 //Standard Header Files
@@ -31,7 +32,7 @@
 //**********************************************************************************
 #define HRB_TASK_PRIORITY				   	1
 #ifndef HRB_TASK_STACK_SIZE
-#define HRB_TASK_STACK_SIZE              	800
+#define HRB_TASK_STACK_SIZE              	400
 #endif
 
 #define HRB_PERIOD_IN_MS					1000
@@ -41,22 +42,6 @@
 //**********************************************************************************
 Task_Struct hrbTask;
 Char hrbTaskStack[HRB_TASK_STACK_SIZE];
-
-////Pin driver handles
-//extern PIN_Handle ledPinHandle;
-//
-////Global memory storage for a PIN_Config table
-//extern PIN_State ledPinState;
-//
-////Initial on board LED pin configuration table
-//extern PIN_Config ledPinTable[];
-
-PIN_Handle ledPinHandle;
-PIN_State ledPinState;
-PIN_Config ledPinTable[] = {
-Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-PIN_TERMINATE };
 
 // Clock object for heart beat
 static Clock_Struct heartbeatClock;
@@ -134,19 +119,4 @@ static void greenHeartbeat_taskFxn(UArg a0, UArg a1) {
  */
 static void redHeartbeat_SwiFxn(UArg a0) {
 	//PIN_setOutputValue(ledPinHandle, Board_LED0, !PIN_getOutputValue(Board_LED0));
-}
-
-/**
- * Initializes LED pins.
- *
- * @param 	none
- * @return 	none
- */
-void led_init(void)
-{
-	// Open GPIO pins
-	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
-	if (!ledPinHandle) {
-		Log_error0("Error initializing onboard LED pins");
-	}
 }

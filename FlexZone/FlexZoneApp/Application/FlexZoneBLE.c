@@ -37,7 +37,7 @@
 #include <EMG_Service.h>
 #include <string.h>
 
-#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
+//#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
 
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Semaphore.h>
@@ -60,10 +60,10 @@
 #include <ICallBleAPIMSG.h>
 
 #include <devinfoservice.h>
+#include <FlexZoneBLE.h>
 #include "util.h"
 
 #include "Board.h"
-#include "FlexZone.h"
 
 
 /*********************************************************************
@@ -80,7 +80,7 @@
 #define DEFAULT_PASSCODE                      000000
 
 // Task configuration
-#define PRZ_TASK_PRIORITY                     3
+#define PRZ_TASK_PRIORITY                     1
 
 #ifndef PRZ_TASK_STACK_SIZE
 #define PRZ_TASK_STACK_SIZE                   800
@@ -105,6 +105,8 @@ typedef enum
   APP_MSG_GAP_STATE_CHANGE,    /* The GAP / connection state has changed      */
   APP_MSG_BUTTON_DEBOUNCED,    /* A button has been debounced with new value  */
   APP_MSG_SEND_PASSCODE,       /* A pass-code/PIN is requested during pairing */
+  APP_MSG_SEND_EMG_DATA,    	/* An EMG data has been collected. Send the data  */
+  APP_MSG_SEND_ACCEL_DATA,    	/* An Aceelerometer data has been collected. Send the data  */
 } app_msg_types_t;
 
 // Struct for messages sent to the application task
@@ -180,17 +182,16 @@ static uint8_t advertData[] =
   // complete name
   9,
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e ',
+  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e',
 
 };
 
 // GAP GATT Attributes
-static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "Flex Zone";
+static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZone";
 
 // Globals used for ATT Response retransmission
 static gattMsgEvent_t *pAttRsp = NULL;
 static uint8_t rspTxRetry = 0;
-
 
 /* Pin driver handles */
 static PIN_Handle buttonPinHandle;
@@ -212,11 +213,17 @@ PIN_Config buttonPinTable[] = {
 static Clock_Struct button0DebounceClock;
 static Clock_Struct button1DebounceClock;
 
-
 // State of the buttons
 static uint8_t button0State = 0;
 static uint8_t button1State = 0;
 
+//Data array used by App and BLE stack to psuh EMG and Accel data
+static uint8_t emgArrayData[EMG_STREAM_LEN];
+static uint8_t accelArrayData[ACCEL_STREAM_LEN];
+
+//Arrays to store test data from EMG and ACCEL
+static uint8_t test_emgArrayData[EMG_STREAM_LEN - 2];
+static uint8_t test_accelArrayData[ACCEL_STREAM_LEN - 2];
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
@@ -241,6 +248,8 @@ static void user_gapBondMgr_pairStateCB(uint16_t connHandle, uint8_t state,
 
 static void buttonDebounceSwiFxn(UArg buttonId);
 static void user_handleButtonPress(button_state_t *pState);
+static void user_handleEmgData(void);
+static void user_handleAccelData(void);
 
 // Generic callback handlers for value changes in services.
 static void user_service_ValueChangeCB( uint16_t connHandle, uint16_t svcUuid, uint8_t paramID, uint8_t *pValue, uint16_t len );
@@ -266,7 +275,6 @@ static char *Util_convertArrayToHexString(uint8_t const *src, uint8_t src_len,
                                           uint8_t *dst, uint8_t dst_len);
 static char *Util_getLocalNameStr(const uint8_t *data);
 
-
 /*********************************************************************
  * PROFILE CALLBACKS
  */
@@ -288,7 +296,7 @@ static gapBondCBs_t user_bondMgrCBs =
 // The type Button_ServiceCBs_t is defined in Button_Service.h
 static EMGServiceCBs_t user_EMG_ServiceCBs =
 {
-  .pfnChangeCb    = NULL, // No writable chars in Button Service, so no change handler.
+  .pfnChangeCb    = user_service_ValueChangeCB, // Characteristic value change callback handler
   .pfnCfgChangeCb = user_service_CfgChangeCB, // Noti/ind configuration callback handler
 };
 
@@ -354,7 +362,6 @@ static void FlexZone_init(void)
   // Hardware initialization
   // ******************************************************************
 
-  // Open Button pins
   buttonPinHandle = PIN_open(&buttonPinState, buttonPinTable);
   if(!buttonPinHandle) {
     Log_error0("Error initializing button pins");
@@ -424,7 +431,7 @@ static void FlexZone_init(void)
   GAP_SetParamValue(TGAP_GEN_DISC_ADV_INT_MAX, advInt);
 
   // Set duration of advertisement before stopping in Limited adv mode.
-  GAP_SetParamValue(TGAP_LIM_ADV_TIMEOUT, 30); // Seconds
+  GAP_SetParamValue(TGAP_LIM_ADV_TIMEOUT, 400); // Seconds
 
   // ******************************************************************
   // BLE Bond Manager initialization
@@ -455,7 +462,6 @@ static void FlexZone_init(void)
   GGS_SetParameter(GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, attDeviceName);
 
   // Add services to GATT server and give ID of this task for Indication acks.
-  //LedService_AddService( selfEntity );
   EMGService_AddService( selfEntity );
   AccelService_AddService( selfEntity );
 
@@ -465,15 +471,14 @@ static void FlexZone_init(void)
   AccelService_RegisterAppCBs( &user_Accel_ServiceCBs );
 
   // Placeholder variable for characteristic intialization
-  uint8_t initVal[40] = {0};
-  uint8_t initString[] = "This is a pretty long string, isn't it!";
+  uint8_t initVal[EMG_STREAM_LEN] = {0};
 
   // Initalization of characteristics in EMGService that can provide data.
-  EMGService_SetParameter(EMG_STRING_ID, EMG_STRING_LEN, initVal);
+  EMGService_SetParameter(EMG_CONFIG_ID, EMG_CONFIG_LEN, initVal);
   EMGService_SetParameter(EMG_STREAM_ID, EMG_STREAM_LEN, initVal);
 
   // Initalization of characteristics in Accel_Service that can provide data.
-  AccelService_SetParameter(ACCEL_STRING_ID, sizeof(initString), initString);
+  AccelService_SetParameter(ACCEL_CONFIG_ID, ACCEL_CONFIG_LEN, initVal);
   AccelService_SetParameter(ACCEL_STREAM_ID, ACCEL_STREAM_LEN, initVal);
 
   // Start the stack in Peripheral mode.
@@ -488,7 +493,6 @@ static void FlexZone_init(void)
   // Register for GATT local events and ATT Responses pending for transmission
   GATT_RegisterForMsgs(selfEntity);
 }
-
 
 
 /*
@@ -557,7 +561,10 @@ static void FlexZone_taskFxn(UArg a0, UArg a1)
 
         if (pMsg && safeToDealloc)
         {
-          ICall_freeMsg(pMsg);
+        	Log_info0("Attempting memory dealloc ");
+        	ICall_freeMsg(pMsg);
+
+        	Log_info0("Memory dealloc passed ");
         }
       }
 
@@ -644,10 +651,25 @@ static void user_processApplicationMessage(app_msg_t *pMsg)
 
     case APP_MSG_BUTTON_DEBOUNCED: /* Message from swi about pin change */
       {
-        button_state_t *pButtonState = (button_state_t *)pMsg->pdu;
-        user_handleButtonPress(pButtonState);
+    	  Log_info0("APP_MSG_BUTTON_DEBOUNCED event called ");
+    	  button_state_t *pButtonState = (button_state_t *)pMsg->pdu;
+		user_handleButtonPress(pButtonState);
       }
       break;
+
+    case APP_MSG_SEND_EMG_DATA:
+    	{
+    		Log_info0("APP_MSG_SEND_EMG_DATA event called ");
+            user_handleEmgData();
+        }
+    	break;
+
+    case APP_MSG_SEND_ACCEL_DATA:
+    	{
+    		Log_info0("APP_MSG_SEND_ACCEL_DATA event called ");
+    		user_handleAccelData();
+        }
+    	break;
   }
 }
 
@@ -778,6 +800,7 @@ static void user_handleButtonPress(button_state_t *pState)
     	EMGService_SetParameter(EMG_STREAM_ID,
     	                                 sizeof(local_data),
 										 local_data);
+
 #endif
       break;
     case Board_BUTTON1:
@@ -797,6 +820,46 @@ static void user_handleButtonPress(button_state_t *pState)
   }
 }
 
+/*
+ * @brief   Handle a debounced button press or release in Task context.
+ *          Invoked by the taskFxn based on a message received from a callback.
+ *
+ * @see     buttonDebounceSwiFxn
+ * @see     buttonCallbackFxn
+ *
+ * @param   None.
+ *
+ * @return  None.
+ */
+static void user_handleEmgData(void)
+{
+  // Update the service with the new value.
+  // Will automatically send notification/indication if enabled.
+    	EMGService_SetParameter(EMG_STREAM_ID,
+									 sizeof(emgArrayData),
+									 emgArrayData);
+
+}
+
+/*
+ * @brief   Handle a debounced button press or release in Task context.
+ *          Invoked by the taskFxn based on a message received from a callback.
+ *
+ * @see     buttonDebounceSwiFxn
+ * @see     buttonCallbackFxn
+ *
+ * @param   None.
+ *
+ * @return  None.
+ */
+static void user_handleAccelData(void)
+{
+	  // Update the service with the new value.
+	  // Will automatically send notification/indication if enabled.
+	 AccelService_SetParameter(ACCEL_STREAM_ID,
+									 sizeof(accelArrayData),
+									 accelArrayData);
+}
 /*
  * @brief   Handle a CCCD (configuration change) write received from a peer
  *          device. This tells us whether the peer device wants us to send
@@ -824,16 +887,16 @@ void user_EMGService_ValueChangeHandler(char_data_t *pCharData)
 {
   // Value to hold the received string for printing via Log, as Log printouts
   // happen in the Idle task, and so need to refer to a global/static variable.
-  static uint8_t received_string[EMG_STRING_LEN] = {0};
+  static uint8_t received_string[EMG_CONFIG_LEN] = {0};
 
   switch (pCharData->paramID)
   {
-    case EMG_STRING_ID:
+    case EMG_CONFIG_ID:
       // Do something useful with pCharData->data here
       // -------------------------
       // Copy received data to holder array, ensuring NULL termination.
-      memset(received_string, 0, EMG_STRING_LEN);
-      memcpy(received_string, pCharData->data, EMG_STRING_LEN-1);
+      memset(received_string, 0, EMG_CONFIG_LEN);
+      memcpy(received_string, pCharData->data, EMG_CONFIG_LEN-1);
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.
       Log_info3("Value Change msg: %s %s: %s",
@@ -919,16 +982,16 @@ void user_AccelService_ValueChangeHandler(char_data_t *pCharData)
 {
   // Value to hold the received string for printing via Log, as Log printouts
   // happen in the Idle task, and so need to refer to a global/static variable.
-  static uint8_t received_string[ACCEL_STRING_LEN] = {0};
+  static uint8_t received_string[ACCEL_CONFIG_LEN] = {0};
 
   switch (pCharData->paramID)
   {
-    case ACCEL_STRING_ID:
+    case ACCEL_CONFIG_ID:
       // Do something useful with pCharData->data here
       // -------------------------
       // Copy received data to holder array, ensuring NULL termination.
-      memset(received_string, 0, ACCEL_STRING_LEN);
-      memcpy(received_string, pCharData->data, ACCEL_STRING_LEN-1);
+      memset(received_string, 0, ACCEL_CONFIG_LEN);
+      memcpy(received_string, pCharData->data, ACCEL_CONFIG_LEN-1);
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.
       Log_info3("Value Change msg: %s %s: %s",
@@ -1311,11 +1374,13 @@ static void buttonDebounceSwiFxn(UArg buttonId)
 {
   // Used to send message to app
   button_state_t buttonMsg = { .pinId = buttonId };
-  uint8_t        sendMsg   = FALSE;
+  uint8_t 		i = 0;
+  user_app_error_type_t usr_error;
 
   // Get current value of the button pin after the clock timeout
   uint8_t buttonPinVal = PIN_getInputValue(buttonId);
 
+  Log_info0(" Button Debounce SWI function ");
   // Set interrupt direction to opposite of debounced state
   // If button is now released (button is active low, so release is high)
   if (buttonPinVal)
@@ -1338,13 +1403,27 @@ static void buttonDebounceSwiFxn(UArg buttonId)
       {
         // Button was released
         buttonMsg.state = button0State = 0;
-        sendMsg = TRUE;
       }
       else if (!buttonPinVal && !button0State)
       {
         // Button was pressed
         buttonMsg.state = button0State = 1;
-        sendMsg = TRUE;
+        //Rohit: Create your custom packet
+        //Start filling the emg data. Each emg data contains 3 bytes
+        for (i = 0; i< sizeof(test_emgArrayData); i++){
+        	test_emgArrayData[i] = i;
+        }
+
+        usr_error = user_sendEmgPacket(test_emgArrayData, sizeof(test_emgArrayData), APP_PACKET_TYPE_DATA);
+		if(usr_error == USER_APP_ERROR_OK)
+		{
+			Log_info0("EMG packet Pushed to Stack");
+		}
+		else
+		{
+			Log_info1("ERROR: EMG packet push to stack error %02d", usr_error);
+		}
+
       }
       break;
 
@@ -1355,21 +1434,29 @@ static void buttonDebounceSwiFxn(UArg buttonId)
       {
         // Button was released
         buttonMsg.state = button1State = 0;
-        sendMsg = TRUE;
       }
-      else if (!buttonPinVal && !button0State)
+      else if (!buttonPinVal && !button1State)
       {
         // Button was pressed
         buttonMsg.state = button1State = 1;
-        sendMsg = TRUE;
+
+        //Rohit: Create your custom packet
+		//Start filling the accel data. Each accel data contains 3 bytes
+		for (i = 0; i< sizeof(test_accelArrayData); i++){
+			test_accelArrayData[i] = i + 0x20;
+		}
+
+		usr_error = user_sendAccelPacket(test_accelArrayData, sizeof(test_accelArrayData), APP_PACKET_TYPE_DATA);
+		if(usr_error == USER_APP_ERROR_OK)
+		{
+			Log_info0("Accel packet Pushed to Stack");
+		}
+		else
+		{
+			Log_info1("ERROR: Accel packet push to stack error %02d", usr_error);
+		}
       }
       break;
-  }
-
-  if (sendMsg == TRUE)
-  {
-    user_enqueueRawAppMsg(APP_MSG_BUTTON_DEBOUNCED,
-                      (uint8_t *)&buttonMsg, sizeof(buttonMsg));
   }
 }
 
@@ -1387,9 +1474,6 @@ static void buttonDebounceSwiFxn(UArg buttonId)
  */
 static void buttonCallbackFxn(PIN_Handle handle, PIN_Id pinId)
 {
-  Log_info1("Button interrupt: %s",
-            (IArg)((pinId == Board_BUTTON0)?"Button 0":"Button 1"));
-
   // Disable interrupt on that pin for now. Re-enabled after debounce.
   PIN_setConfig(handle, PIN_BM_IRQ, pinId | PIN_IRQ_DIS);
 
@@ -1403,6 +1487,9 @@ static void buttonCallbackFxn(PIN_Handle handle, PIN_Id pinId)
       Clock_start(Clock_handle(&button1DebounceClock));
       break;
   }
+
+  Log_info1("Button interrupt: %s",
+              (IArg)((pinId == Board_BUTTON0)?"Button 0":"Button 1"));
 }
 
 
@@ -1490,14 +1577,88 @@ static void user_enqueueRawAppMsg(app_msg_types_t appMsgType, uint8_t *pData,
 
     // Copy data into message
     memcpy(pMsg->pdu, pData, len);
-
     // Enqueue the message using pointer to queue node element.
     Queue_enqueue(hApplicationMsgQ, &pMsg->_elem);
+
     // Let application know there's a message.
     Semaphore_post(sem);
   }
 }
 
+/*
+ * @brief  This function creates the packet for EMG service and
+ * 			pushes it to the BLE stack
+ *
+ * @note   Called whenever data has to be sent.
+ *
+ * @param  *pData : Pointer to array with emg values.
+ * @param	len	:   length of the data. This does not include the 2 bytes of header
+ * @param   packetType : Indicates if it is configuration or data type packet
+ *
+ * @return	user_app_error_type_t : Error type, if any, or Error_OK
+ */
+user_app_error_type_t user_sendEmgPacket(uint8_t* pData,
+												uint8 len,
+												app_pkt_type_t packetType)
+{
+
+	if((pData == NULL) || (len == 0))
+	{
+		return(USER_APP_ERROR_INVALID_PARAM);
+	}
+	else if(len > EMG_STREAM_LEN - 2)	//Exclude two bytes of header
+	{
+		return(USER_APP_ERROR_INVALID_LEN);
+	}
+	else
+	{
+		emgArrayData[0] = packetType;	//  packet type
+		emgArrayData[1]	= len; //Length of data. This does not include the two bytes of header
+
+		memcpy(&emgArrayData[2], pData, len);
+
+		user_enqueueRawAppMsg(APP_MSG_SEND_EMG_DATA,
+		    	                      (uint8_t *)emgArrayData, sizeof(emgArrayData));
+	}
+}
+
+/*
+ * @brief  This function creates the packet for Accelerometer service and
+ * 			pushes it to the BLE stack
+ *
+ * @note   Called whenever data has to be sent.
+ *
+ * @param  *pData : Pointer to array with accel values.
+ * @param	len	:   length of the data. This does not include the 2 bytes of header
+ * @param   packetType : Indicates if it is configuration or data type packet
+ *
+ * @return	user_app_error_type_t : Error type, if any, or Error_OK
+ */
+user_app_error_type_t user_sendAccelPacket(uint8_t* pData,
+													uint8 len,
+													app_pkt_type_t packetType)
+{
+
+
+	if((pData == NULL) || (len == 0))
+	{
+		return(USER_APP_ERROR_INVALID_PARAM);
+	}
+	else if(len > ACCEL_STREAM_LEN - 2)	//Exclude two bytes of header
+	{
+		return(USER_APP_ERROR_INVALID_LEN);
+	}
+	else
+	{
+		accelArrayData[0] = packetType;	//  packet type
+		accelArrayData[1] = len; //Length of data. This does not include the two bytes of header
+
+		memcpy(&accelArrayData[2], pData, len);
+
+		user_enqueueRawAppMsg(APP_MSG_SEND_ACCEL_DATA,
+		    	                      (uint8_t *)accelArrayData, sizeof(accelArrayData));
+	}
+}
 
 /*
  * @brief  Convenience function for updating characteristic data via char_data_t

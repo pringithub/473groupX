@@ -31,7 +31,7 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 
 //Home brewed Drivers
 #include "FlexZoneGlobals.h"
-#include "FlexZone.h"
+#include "FlexZoneBLE.h"
 #include "heartbeat.h"
 #include "emg.h"
 #include "accelerometer.h"
@@ -39,10 +39,22 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 //TI-RTOS Header Files
 #include <ti/drivers/UART.h>
 #include <uart_logs.h>
+#include <ti/drivers/PIN.h>
 
 //**********************************************************************************
 // Required Definitions
 //**********************************************************************************
+
+//**********************************************************************************
+// Global Data Structures
+//**********************************************************************************
+//LED Handles
+PIN_Handle ledPinHandle;
+PIN_State ledPinState;
+PIN_Config ledPinTable[] = {
+Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+PIN_TERMINATE };
 
 //**********************************************************************************
 // Function Definitions
@@ -82,10 +94,26 @@ void halAssertHandler(void) {
 		;
 }
 
+/**
+ * Initializes LED pins.
+ *
+ * @param 	none
+ * @return 	none
+ */
+void led_init(void)
+{
+	// Open GPIO pins
+	ledPinHandle = PIN_open(&ledPinState, ledPinTable);
+	if (!ledPinHandle) {
+		Log_error0("Error initializing on board LED pins");
+	}
+}
+
 //**********************************************************************************
 // Main
 //**********************************************************************************
 int main() {
+
 	PIN_init(BoardGpioInitTable);
 
 #ifndef POWER_SAVING
@@ -117,11 +145,11 @@ int main() {
 	//BlE task - Priority 3
 	FlexZone_createTask();
 	//Heart beat task - Priority 2
-	//heartbeat_createTask();
+	heartbeat_createTask();
 	//EMG task - Priority 1
 	emg_createTask();
 	// MPU2650 Accelerometer (SPI) - Priority 2
-	accel_createTask();
+	//accel_createTask();
 
 	//**********************************************************************************
 	// Enable Interrupts & start SYS/BIOS
@@ -130,3 +158,5 @@ int main() {
 
 	return 0;
 }
+
+
