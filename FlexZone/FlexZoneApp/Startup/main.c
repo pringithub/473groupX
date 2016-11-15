@@ -56,6 +56,9 @@ Board_LED0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 PIN_TERMINATE };
 
+// UART driver objects
+UART_Handle uartHandle;
+
 //**********************************************************************************
 // Function Definitions
 //**********************************************************************************
@@ -125,7 +128,8 @@ int main() {
 	//Initialize the RTOS Log formatting and output to UART in Idle thread.
 	//Note: Define xdc_runtime_Log_DISABLE_ALL to remove all impact of Log.
 	//Note: NULL as Params gives 115200,8,N,1 and Blocking mode
-	UartLog_init(UART_open(Board_UART, NULL));
+	uartHandle = UART_open(Board_UART, NULL);
+	UartLog_init(uartHandle);
 
 	//Initialize ICall module
 	ICall_init();
@@ -145,11 +149,11 @@ int main() {
 	//BlE task - Priority 3
 	FlexZone_createTask();
 	//Heart beat task - Priority 2
-	heartbeat_createTask();
+	//heartbeat_createTask();
 	//EMG task - Priority 1
 	emg_createTask();
 	// MPU2650 Accelerometer (SPI) - Priority 2
-	//accel_createTask();
+	accel_createTask();
 
 	//**********************************************************************************
 	// Enable Interrupts & start SYS/BIOS

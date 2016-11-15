@@ -32,7 +32,7 @@
 //**********************************************************************************
 #define HRB_TASK_PRIORITY				   	1
 #ifndef HRB_TASK_STACK_SIZE
-#define HRB_TASK_STACK_SIZE              	400
+#define HRB_TASK_STACK_SIZE              	300
 #endif
 
 #define HRB_PERIOD_IN_MS					1000

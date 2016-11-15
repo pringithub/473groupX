@@ -38,7 +38,7 @@
 //**********************************************************************************
 #define EMG_TASK_PRIORITY				   	2
 #ifndef EMG_TASK_STACK_SIZE
-#define EMG_TASK_STACK_SIZE               	1000
+#define EMG_TASK_STACK_SIZE               	800
 #endif
 
 #define EMG_PERIOD_IN_MS					20
@@ -152,7 +152,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	//Initialize required hardware & clocks for task.
 	emg_init();
 	uint64_t pulseTickCounter = 0, deadTickCounter = 0;
-	Timestamp_getFreq(&freq);
+//	Timestamp_getFreq(&freq);
 	uint32_t repCount = 0;
 	uint16_t pulsePeak = 0;
 
@@ -160,7 +160,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	{
 		//Wait for ADC poll and ADC reading
 		Semaphore_pend(Semaphore_handle(&emgSemaphore), BIOS_WAIT_FOREVER);
-		timeStart = Timestamp_get32();
+//		timeStart = Timestamp_get32();
 		int i;
 
 		for(i = 0; i < EMG_NUMBER_OF_SAMPLES_SLICE; ++i)
@@ -236,9 +236,9 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		emg_set_stats.numReps = repCount;
 		processingDone = 1;
 
-		timeEnd = Timestamp_get32();
-		timeProcessing = timeEnd - timeStart;
-		usProcessing = (timeProcessing*1000000)/freq.lo;
+//		timeEnd = Timestamp_get32();
+//		timeProcessing = timeEnd - timeStart;
+//		usProcessing = (timeProcessing*1000000)/freq.lo;
 		//Log_info1("EMG Thread: Processing Time = %u", (IArg)usProcessing);
 
 
@@ -270,7 +270,7 @@ static void emgPoll_SwiFxn(UArg a0) {
 		}
 
 		rawAdc[adcCounter++] = localSum/EMG_NUMBER_OF_SAMPLES_READING;
-		//Log_info1("EMG Thread: ADC result = %u", (IArg)rawAdc[adcCounter-1]);
+		Log_info1("EMG Thread: ADC result = %u", (IArg)rawAdc[adcCounter-1]);
 
 		if (EMG_NUMBER_OF_SAMPLES_SLICE == adcCounter)
 		{
