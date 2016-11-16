@@ -16,11 +16,6 @@
 
 //TI-RTOS Header Files
 #include <ti/drivers/PIN.h>
-#include <ti/drivers/UART.h>
-
-//Standard Header Files
-//#include <stdio.h>
-//#include <string.h>
 
 //**********************************************************************************
 // Required Definitions
@@ -69,9 +64,6 @@ typedef enum
 //**********************************************************************************
 // Globally Scoped Variables (for RTOS: Semaphores, Mailboxes, Queues, Data Structures)
 //**********************************************************************************
-// UART driver objects
-extern UART_Handle uartHandle;
-
 //FlexZone - BLE Simple Peripheral Thread
 
 

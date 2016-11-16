@@ -31,7 +31,7 @@
 #include "MPU9250.h"
 
 //Standard Header Files
-//#include <string.h>
+#include <string.h>
 //#include <stdio.h>
 
 //**********************************************************************************
@@ -39,7 +39,7 @@
 //**********************************************************************************
 #define ACCEL_TASK_PRIORITY					1
 #ifndef ACCEL_TASK_STACK_SIZE
-#define ACCEL_TASK_STACK_SIZE               800
+#define ACCEL_TASK_STACK_SIZE              800
 #endif
 
 #define ACCEL_PERIOD_IN_MS					200
@@ -134,11 +134,8 @@ static void accel_taskFxn(UArg a0, UArg a1) {
 		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
 		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
 		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
-//		PIN_setOutputValue(ledPinHandle, Board_LED1, !PIN_getOutputValue(Board_LED1));
-//        Log_info0("");
-//        Log_info1("Accel Thread: ACCEL (XYZ) \t%d", (IArg)myAccel.ACCEL_X);
         Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
-//        Log_info3("Accel Thread:  GYRO (XYZ) \t%d\t%d\t%d", (IArg)myAccel.GYRO_X, (IArg)myAccel.GYRO_Y, (IArg)myAccel.GYRO_Z);
+//        Log_info3("Accel Thread:  GYRO (XYZ) \t%d\t%d\t%d", (IArg)xg_res, (IArg)yg_res, (IArg)zg_res);
 	}
 }
 
