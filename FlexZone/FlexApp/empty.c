@@ -82,8 +82,10 @@ Void heartBeatFxn(UArg arg0, UArg arg1)
     while (1) {
         Task_sleep((UInt)arg0);
         PIN_setOutputValue(ledPinHandle, IOID_3, !PIN_getOutputValue(IOID_3));
-        set_Wiper(counter, 0);
+        set_Wiper(counter, 1);
         counter += 50;
+        System_printf("counter: %d", counter);
+        System_flush();
     }
 }
 
@@ -97,7 +99,7 @@ int main(void)
     /* Call board init functions */
     Board_initGeneral();
     // Board_initI2C();
-    Board_initSPI();
+    // Board_initSPI();
     // Board_initUART();
     // Board_initWatchdog();
 

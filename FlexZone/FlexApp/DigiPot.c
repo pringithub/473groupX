@@ -10,6 +10,8 @@
 //**********************************************************************************
 //XDCtools Header Files
 #include <xdc/runtime/Log.h>
+#include <xdc/std.h>
+#include <xdc/runtime/System.h>
 
 //TI-RTOS Header Files
 #include <ti/drivers/PIN.h>
@@ -91,7 +93,7 @@ uint8_t write_reg(uint8_t regAddr, uint8_t data, uint8_t digiPotNum)
 	//Transaction consists of two writes: Register address then data
 	digiPot_spiXmitByte(regAddr);
 	uint8_t temp = digiPot_spiXmitByte(data);
-	digiPot_cs_low(digiPotNum);
+	digiPot_cs_high(digiPotNum);
 	return temp;
 }
 
@@ -197,7 +199,8 @@ uint8_t digiPot_spiXmitByte(uint8_t data)
 	//Perform transaction
 	bool ret = SPI_transfer(spiHandle, &spiTransaction);
 	if (!ret) {
-		Log_error0("Unsuccessful SPI transfer");
+	    System_printf("Unsuccessful SPI1 Transfer");
+	    System_flush();
 	}
 
 	// Wait on successful transaction

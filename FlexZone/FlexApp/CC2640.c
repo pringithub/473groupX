@@ -77,9 +77,9 @@ const PIN_Config BoardGpioInitTable[] = {
 	IOID_2   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 	IOID_3   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 	IOID_0   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* SPI Chip Select */
-	IOID_12 | PIN_INPUT_EN | PIN_PULLDOWN,                                            		/* SPI master out - slave in */
-	IOID_14 | PIN_INPUT_EN | PIN_PULLDOWN,                                            		/* SPI master in - slave out */
-	IOID_11 | PIN_INPUT_EN | PIN_PULLDOWN,                                             		/* SPI clock */
+//	IOID_12 | PIN_INPUT_EN | PIN_PULLDOWN,                                            		/* SPI master out - slave in */
+//	IOID_14 | PIN_INPUT_EN | PIN_PULLDOWN,                                            		/* SPI master in - slave out */
+//	IOID_11 | PIN_INPUT_EN | PIN_PULLDOWN,                                             		/* SPI clock */
 //    Board_RLED   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* LED initially off             */
 //    Board_GLED   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* LED initially off             */
 //    Board_BTN1   | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_BOTHEDGES | PIN_HYSTERESIS,            /* Button is active low          */

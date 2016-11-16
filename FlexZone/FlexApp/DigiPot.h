@@ -18,7 +18,7 @@
 // Required Definitions
 //**********************************************************************************
 #define DIGIPOT_0_CS	IOID_0
-#define DIGIPOT_1_CS	IOID_0 //TODO
+#define DIGIPOT_1_CS	IOID_2
 
 //**********************************************************************************
 // Global Data Structures
