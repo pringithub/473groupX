@@ -147,7 +147,7 @@ int main(void)
 
     /* Construct heartBeat Task  thread */
     Task_Params_init(&taskParams);
-    taskParams.arg0 = 100 * 1000 / Clock_tickPeriod;
+    taskParams.arg0 = 200 * 1000 / Clock_tickPeriod;
     taskParams.stackSize = TASKSTACKSIZE;
     taskParams.stack = &task0Stack;
     Task_construct(&task0Struct, (Task_FuncPtr)heartBeatFxn, &taskParams, NULL);
