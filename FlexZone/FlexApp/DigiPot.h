@@ -38,8 +38,10 @@
  * @param	digipotNum		Index of digipot to write to.
  * @return
  */
-void set_Wiper(uint8_t value, uint8_t digiPotNum);
+uint8_t set_Wiper(uint8_t value, uint8_t digiPotNum);
 
+
+uint8_t read_ISL(uint8_t addr, uint8_t digiPotNum);
 
 /**
  * TODO: Comments

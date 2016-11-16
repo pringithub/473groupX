@@ -53,6 +53,7 @@ static PIN_State spiCsPinState;
 //Initial SPI CS pin configuration table
 PIN_Config spiCsPinTable[] = {
 		DIGIPOT_0_CS | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+		DIGIPOT_1_CS | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 		PIN_TERMINATE };
 
 //**********************************************************************************
@@ -74,9 +75,28 @@ PIN_Config spiCsPinTable[] = {
  * @param	digipotNum		Index of digipot to write to.
  * @return
  */
-void set_Wiper(uint8_t value, uint8_t digiPotNum)
+uint8_t set_Wiper(uint8_t value, uint8_t digiPotNum)
 {
-	write_reg(0xC0, value, digiPotNum);
+	return write_reg(0xC0, value, digiPotNum);
+}
+
+uint8_t read_ISL(uint8_t addr, uint8_t digiPotNum)
+{
+	uint8_t ret, check, command = 0x80 | addr;
+	digiPot_cs_low(digiPotNum);
+
+	digiPot_spiXmitByte(command);		//read command
+	digiPot_spiXmitByte(0x00);			//trash
+	check = digiPot_spiXmitByte(0x00);		//nop
+	if (check != command) {
+		return 0xFF;
+	}
+
+	ret = digiPot_spiXmitByte(0x00);
+
+	digiPot_cs_high(digiPotNum);
+
+	return ret;
 }
 
 /**
