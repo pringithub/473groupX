@@ -124,12 +124,12 @@ void mpu_i2c_init()
 		System_flush();
     }
 
-//    //Disable FSYNC
-//	uint8_t temp;
-//	temp = i2cRead(0x1A);
-//	temp &= ~0x38;	//b00111000
-//	i2cWrite(0x1A, temp);
-//
+    //Disable FSYNC
+	uint8_t temp;
+	temp = i2cRead(0x1A);
+	temp &= ~0x38;	//b00111000
+	i2cWrite(0x1A, temp);
+
 //    //Disable Sleep
 //	temp = i2cRead(0x6B);
 //	System_printf("before: %d",temp);
@@ -153,9 +153,7 @@ uint8_t i2cRead(uint8_t regAddr)
 	accelTxBuf[0] = regAddr;
 
 	//Configure the transaction object
-	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR | READ_FLAG;
-//	i2cTransaction.slaveAddress = (ACCEL_I2C_SLAVE_ADDR << 1) | 0x01;
-//	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR;
+	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR;
 	i2cTransaction.writeBuf = accelTxBuf;
 	i2cTransaction.writeCount = 1;
 	i2cTransaction.readBuf = accelRxBuf;
@@ -188,7 +186,6 @@ void i2cWrite(uint8_t regAddr, uint8_t data)
 	accelTxBuf[1] = data;
 
 	//Configure the transaction object
-//	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR | WRITE_FLAG;
 	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR;
 	i2cTransaction.writeBuf = accelTxBuf;
 	i2cTransaction.writeCount = 2;
