@@ -17,7 +17,7 @@
 //**********************************************************************************
 // Required Definitions
 //**********************************************************************************
-#define ACCEL_I2C_SLAVE_ADDR		0x68
+#define ACCEL_I2C_SLAVE_ADDR		0x69	//01101000
 
 //Accelerometer Registers
 #define ACCEL_XOUT_H 0x3b
@@ -35,7 +35,8 @@
 #define GYRO_ZOUT_H  0x47
 
 //R/W masks
-#define READ_FLAG 0x80
+#define READ_FLAG 	0x80
+#define WRITE_FLAG 	0x00
 
 //Parameters
 #define X_AXIS 0
@@ -105,7 +106,7 @@ uint8_t i2cRead(uint8_t regAddr);
  * Writes 1-byte value to specified address.
  *
  * @param 	regAddr		1-byte register address (RA)
- * @return	uint8_t data from accelerometer's SDA line.
+ * @param	uint8_t data from accelerometer's SDA line.
  */
 void i2cWrite(uint8_t regAddr, uint8_t data);
 

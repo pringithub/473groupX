@@ -123,6 +123,20 @@ void mpu_i2c_init()
 		System_printf("Accelerometer I2C did not open\n");
 		System_flush();
     }
+
+//    //Disable FSYNC
+//	uint8_t temp;
+//	temp = i2cRead(0x1A);
+//	temp &= ~0x38;	//b00111000
+//	i2cWrite(0x1A, temp);
+//
+//    //Disable Sleep
+//	temp = i2cRead(0x6B);
+//	System_printf("before: %d",temp);
+//	temp &= ~0x40;	//b01000000
+//	System_printf("\tafter: %d",temp);
+//	System_flush();
+//	i2cWrite(0x6B, temp);
 }
 
 /**
@@ -140,6 +154,8 @@ uint8_t i2cRead(uint8_t regAddr)
 
 	//Configure the transaction object
 	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR | READ_FLAG;
+//	i2cTransaction.slaveAddress = (ACCEL_I2C_SLAVE_ADDR << 1) | 0x01;
+//	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR;
 	i2cTransaction.writeBuf = accelTxBuf;
 	i2cTransaction.writeCount = 1;
 	i2cTransaction.readBuf = accelRxBuf;
@@ -161,9 +177,28 @@ uint8_t i2cRead(uint8_t regAddr)
  * Writes 1-byte value to specified address.
  *
  * @param 	regAddr		1-byte register address (RA)
- * @return	uint8_t data from accelerometer's SDA line.
+ * @param	uint8_t data from accelerometer's SDA line.
  */
 void i2cWrite(uint8_t regAddr, uint8_t data)
 {
-	// TODO
+	I2C_Transaction i2cTransaction;
+
+	// Place data to be sent in tx buffer
+	accelTxBuf[0] = regAddr;
+	accelTxBuf[1] = data;
+
+	//Configure the transaction object
+//	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR | WRITE_FLAG;
+	i2cTransaction.slaveAddress = ACCEL_I2C_SLAVE_ADDR;
+	i2cTransaction.writeBuf = accelTxBuf;
+	i2cTransaction.writeCount = 2;
+	i2cTransaction.readBuf = accelRxBuf;
+	i2cTransaction.readCount = 0;
+
+	//Perform address transaction
+	bool ret = I2C_transfer(accel_i2c_handle, &i2cTransaction);
+	if (!ret) {
+		System_printf("Unsuccessful accelerometer I2C transfer\n");
+		System_flush();
+	}
 }
