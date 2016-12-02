@@ -75,6 +75,11 @@
 const PIN_Config BoardGpioInitTable[] = {
 	IOID_0   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot0 SPI Chip Select */
 	IOID_2   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot1 SPI Chip Select */
+	IOID_11  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Accel SPI Chip Select */
+//	Board_I2C0_SDA0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,      /* SDA0 */
+//	Board_I2C0_SCL0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,      /* SCL0 */
+//	Board_I2C0_SCL0  | PIN_INPUT_EN | PIN_PULLUP,                                           /* I2C0 */
+//	Board_I2C0_SDA0  | PIN_INPUT_EN | PIN_PULLUP,                                           /* I2C0 */
 //    Board_SPI_FLASH_CS | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,  /* External flash chip select    */
 //    Board_UART_RX | PIN_INPUT_EN | PIN_PULLDOWN,                                              /* DevPack */
 //    Board_UART_TX | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL,                        /* DevPack */
@@ -110,43 +115,43 @@ const PIN_Config BoardGpioInitTable[] = {
 /*
  *  ============================= UART begin ===================================
  */
-#if defined(__TI_COMPILER_VERSION__)
-#pragma DATA_SECTION(UART_config, ".const:UART_config")
-#pragma DATA_SECTION(uartCC26XXHWAttrs, ".const:uartCC26XXHWAttrs")
-#endif
-
-/* Include drivers */
-#include <ti/drivers/UART.h>
-#include <ti/drivers/uart/UARTCC26XX.h>
-
-/* UART objects */
-UARTCC26XX_Object uartCC26XXObjects[CC2640_UARTCOUNT];
-
-/* UART hardware parameter structure, also used to assign UART pins */
-//const UARTCC26XX_HWAttrsV1 uartCC26XXHWAttrs[CC2640_UARTCOUNT] = {
-const UARTCC26XX_HWAttrs uartCC26XXHWAttrs[CC2640_UARTCOUNT] = {
-    {
-        .baseAddr       = UART0_BASE,
-        .powerMngrId    = PERIPH_UART0,//PowerCC26XX_PERIPH_UART0,
-        .intNum         = INT_UART0, //INT_UART0_COMB,
-        //.intPriority    = ~0,
-        //.swiPriority    = 0,
-        .txPin          = Board_UART_TX,
-        .rxPin          = Board_UART_RX,
-        .ctsPin         = PIN_UNASSIGNED,
-        .rtsPin         = PIN_UNASSIGNED
-    }
-};
-
-/* UART configuration structure */
-const UART_Config UART_config[] = {
-    {
-        .fxnTablePtr = &UARTCC26XX_fxnTable,
-        .object      = &uartCC26XXObjects[0],
-        .hwAttrs     = &uartCC26XXHWAttrs[0]
-    },
-    {NULL, NULL, NULL}
-};
+//#if defined(__TI_COMPILER_VERSION__)
+//#pragma DATA_SECTION(UART_config, ".const:UART_config")
+//#pragma DATA_SECTION(uartCC26XXHWAttrs, ".const:uartCC26XXHWAttrs")
+//#endif
+//
+///* Include drivers */
+//#include <ti/drivers/UART.h>
+//#include <ti/drivers/uart/UARTCC26XX.h>
+//
+///* UART objects */
+//UARTCC26XX_Object uartCC26XXObjects[CC2640_UARTCOUNT];
+//
+///* UART hardware parameter structure, also used to assign UART pins */
+////const UARTCC26XX_HWAttrsV1 uartCC26XXHWAttrs[CC2640_UARTCOUNT] = {
+//const UARTCC26XX_HWAttrs uartCC26XXHWAttrs[CC2640_UARTCOUNT] = {
+//    {
+//        .baseAddr       = UART0_BASE,
+//        .powerMngrId    = PERIPH_UART0,//PowerCC26XX_PERIPH_UART0,
+//        .intNum         = INT_UART0, //INT_UART0_COMB,
+//        //.intPriority    = ~0,
+//        //.swiPriority    = 0,
+//        .txPin          = Board_UART_TX,
+//        .rxPin          = Board_UART_RX,
+//        .ctsPin         = PIN_UNASSIGNED,
+//        .rtsPin         = PIN_UNASSIGNED
+//    }
+//};
+//
+///* UART configuration structure */
+//const UART_Config UART_config[] = {
+//    {
+//        .fxnTablePtr = &UARTCC26XX_fxnTable,
+//        .object      = &uartCC26XXObjects[0],
+//        .hwAttrs     = &uartCC26XXHWAttrs[0]
+//    },
+//    {NULL, NULL, NULL}
+//};
 /*
  *  ============================= UART end =====================================
  */
