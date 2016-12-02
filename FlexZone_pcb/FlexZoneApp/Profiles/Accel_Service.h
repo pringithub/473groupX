@@ -42,8 +42,8 @@
  *
  *****************************************************************************/
 
-#ifndef _EMG_SERVICE_H_
-#define _EMG_SERVICE_H_
+#ifndef _ACCEL_SERVICE_H_
+#define _ACCEL_SERVICE_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -54,6 +54,7 @@ extern "C"
  * INCLUDES
  */
 #include <bcomdef.h>
+#include "FlexZoneGlobals.h"
 
 /*********************************************************************
  * CONSTANTS
@@ -76,6 +77,8 @@ extern "C"
 #define ACCEL_STREAM_LEN                40
 #define ACCEL_STREAM_LEN_MIN            0
 
+#define ACCELCONFIG_TASK_STACK_SIZE		256
+#define ACCELCONFIG_TASK_PRIORITY		3
 /*********************************************************************
  * TYPEDEFS
  */
@@ -151,6 +154,10 @@ extern bStatus_t AccelService_SetParameter( uint8_t param, uint16_t len, void *v
  */
 extern bStatus_t AccelService_GetParameter( uint8_t param, uint16_t *len, void *value );
 
+
+void accelConfig_SwiFxn(void);
+
+void accelConfig_createTask(void);
 /*********************************************************************
 *********************************************************************/
 

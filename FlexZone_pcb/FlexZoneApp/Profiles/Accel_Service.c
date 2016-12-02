@@ -51,6 +51,9 @@
 //#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/Diags.h>
+#include <ti/sysbios/BIOS.h>
+#include <ti/sysbios/knl/Semaphore.h>
+#include <ti/sysbios/knl/Task.h>
 
 #include "bcomdef.h"
 #include "OSAL.h"
@@ -104,6 +107,9 @@ CONST uint8_t accel_StreamUUID[ATT_UUID_SIZE] =
 static AccelServiceCBs_t *pAppCBs = NULL;
 static uint8_t accel_icall_rsp_task_id = INVALID_TASK_ID;
 
+Semaphore_Struct accelConfig_Semaphore;
+Task_Struct accelConfigTask;
+uint8_t accelConfig_data[ACCEL_CONFIG_LEN];
 /*********************************************************************
 * Profile Attributes - variables
 */
@@ -136,6 +142,7 @@ static gattCharCfg_t *accel_StreamConfig;
 static char accel_UserStreamString[] = "Accelerometer Data";
 static char accel_UserConfigString[] = "Accelerometer Config";
 
+Char accelConfigTaskStack[ACCELCONFIG_TASK_STACK_SIZE];
 /*********************************************************************
 * Profile Attributes - Table
 */
@@ -615,4 +622,39 @@ static bStatus_t Accel_Service_WriteAttrCB( uint16_t connHandle, gattAttribute_t
       pAppCBs->pfnChangeCb( connHandle, ACCEL_SERVICE_SERV_UUID, paramID, pValue, len+offset ); // Call app function from stack task context.
 
   return status;
+}
+
+static void accelConfig_task(UArg a0, UArg a1)
+{
+	while(1){
+		//Wait for Accelerometer Semaphore
+		Semaphore_pend(Semaphore_handle(&accelConfig_Semaphore), BIOS_WAIT_FOREVER);
+		//Do things with accelConfig_data
+		System_printf("Accel Config data received: %c-%c-%c-%c-%c\n",
+				accelConfig_data[0],accelConfig_data[1],accelConfig_data[2],accelConfig_data[3],accelConfig_data[4]);
+		System_flush();
+	}
+}
+
+void accelConfig_createTask(void) {
+	Task_Params taskParams;
+	Semaphore_Params accelConfig_semaphoreParams;
+
+	// Configure & construct semaphore
+	Semaphore_Params_init(&accelConfig_semaphoreParams);
+	Semaphore_construct(&accelConfig_Semaphore, 0, &accelConfig_semaphoreParams);
+
+	// Configure task
+	Task_Params_init(&taskParams);
+	taskParams.stack = accelConfigTaskStack;
+	taskParams.stackSize = ACCELCONFIG_TASK_STACK_SIZE;
+	taskParams.priority = ACCELCONFIG_TASK_PRIORITY;
+
+	//Dynamically construct task
+	Task_construct(&accelConfigTask, accelConfig_task, &taskParams, NULL);
+}
+
+void accelConfig_SwiFxn(void) {
+	//Post semaphore to accel_taskFxn
+	Semaphore_post(Semaphore_handle(&accelConfig_Semaphore));
 }

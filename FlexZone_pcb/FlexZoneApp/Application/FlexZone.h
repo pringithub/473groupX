@@ -42,6 +42,8 @@ extern "C"
  * INCLUDES
  */
 #include "FlexZoneGlobals.h"
+#include "Accel_Service.h"
+#include "EMG_Service.h"
 /*********************************************************************
 *  EXTERNAL VARIABLES
 */

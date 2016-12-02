@@ -37,7 +37,7 @@
 #include <EMG_Service.h>
 #include <string.h>
 
-#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
+//#define xdc_runtime_Log_DISABLE_ALL 0 // Add to disable logs from this file
 
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Semaphore.h>
@@ -80,7 +80,7 @@
 #define DEFAULT_PASSCODE                      000000
 
 // Task configuration
-#define PRZ_TASK_PRIORITY                     1
+#define PRZ_TASK_PRIORITY                     4
 
 #ifndef PRZ_TASK_STACK_SIZE
 #define PRZ_TASK_STACK_SIZE                   800
@@ -175,7 +175,7 @@ static uint8_t advertData[] =
   // complete name
   10,
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', '!'
+  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', '@'
 
 };
 
@@ -191,8 +191,13 @@ static uint8_t emgArrayData[EMG_STREAM_LEN];
 static uint8_t accelArrayData[ACCEL_STREAM_LEN];
 
 //Arrays to store test data from EMG and ACCEL
-static uint8_t test_emgArrayData[EMG_STREAM_LEN - 2];
-static uint8_t test_accelArrayData[ACCEL_STREAM_LEN - 2];
+//static uint8_t test_emgArrayData[EMG_STREAM_LEN - 2];
+//static uint8_t test_accelArrayData[ACCEL_STREAM_LEN - 2];
+
+//Semaphore_Struct emgConfig_Semaphore;
+extern uint8_t accelConfig_data[];
+
+extern uint8_t emgConfig_data[];
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
@@ -321,6 +326,7 @@ static void FlexZone_init(void)
   ICall_registerApp(&selfEntity, &sem);
 
   Log_info0("Initializing the user task, hardware, BLE stack and services.");
+
 
   // Initialize queue for application messages.
   // Note: Used to transfer control to application thread from e.g. interrupts.
@@ -764,25 +770,25 @@ void user_EMGService_ValueChangeHandler(char_data_t *pCharData)
 {
   // Value to hold the received string for printing via Log, as Log printouts
   // happen in the Idle task, and so need to refer to a global/static variable.
-  static uint8_t received_string[EMG_CONFIG_LEN] = {0};
-
   switch (pCharData->paramID)
   {
     case EMG_CONFIG_ID:
       // Do something useful with pCharData->data here
       // -------------------------
       // Copy received data to holder array, ensuring NULL termination.
-      memset(received_string, 0, EMG_CONFIG_LEN);
-      memcpy(received_string, pCharData->data, EMG_CONFIG_LEN-1);
+    	memcpy(emgConfig_data, pCharData->data, EMG_CONFIG_LEN-1);
+  	    emgConfig_SwiFxn();
+
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.
       Log_info3("Value Change msg: %s %s: %s",
                 (IArg)"Data Service",
                 (IArg)"String",
-                (IArg)received_string);
+                (IArg)emgConfig_data);
       break;
 
     case EMG_STREAM_ID:
+
       Log_info3("Value Change msg: Data Service Stream: %02x:%02x:%02x...",
                 (IArg)pCharData->data[0],
                 (IArg)pCharData->data[1],
@@ -859,7 +865,7 @@ void user_AccelService_ValueChangeHandler(char_data_t *pCharData)
 {
   // Value to hold the received string for printing via Log, as Log printouts
   // happen in the Idle task, and so need to refer to a global/static variable.
-  static uint8_t received_string[ACCEL_CONFIG_LEN] = {0};
+//  static uint8_t received_string[ACCEL_CONFIG_LEN] = {0};
 
   switch (pCharData->paramID)
   {
@@ -867,14 +873,17 @@ void user_AccelService_ValueChangeHandler(char_data_t *pCharData)
       // Do something useful with pCharData->data here
       // -------------------------
       // Copy received data to holder array, ensuring NULL termination.
-      memset(received_string, 0, ACCEL_CONFIG_LEN);
-      memcpy(received_string, pCharData->data, ACCEL_CONFIG_LEN-1);
+//      memset(received_string, 0, ACCEL_CONFIG_LEN);
+      memcpy(accelConfig_data, pCharData->data, ACCEL_CONFIG_LEN-1);
+
+      accelConfig_SwiFxn();
+
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.
       Log_info3("Value Change msg: %s %s: %s",
                 (IArg)"Data Service",
                 (IArg)"String",
-                (IArg)received_string);
+                (IArg)accelConfig_data);
       break;
 
     case ACCEL_STREAM_ID:
@@ -1490,6 +1499,7 @@ static char *Util_getLocalNameStr(const uint8_t *data) {
 
   return localNameStr;
 }
+
 
 /*********************************************************************
 *********************************************************************/

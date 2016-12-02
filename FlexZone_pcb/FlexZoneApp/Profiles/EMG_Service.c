@@ -51,6 +51,9 @@
 //#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/Diags.h>
+#include <ti/sysbios/BIOS.h>
+#include <ti/sysbios/knl/Semaphore.h>
+#include <ti/sysbios/knl/Task.h>
 
 #include "bcomdef.h"
 #include "OSAL.h"
@@ -104,6 +107,9 @@ CONST uint8_t emg_StreamUUID[ATT_UUID_SIZE] =
 static EMGServiceCBs_t *pAppCBs = NULL;
 static uint8_t emg_icall_rsp_task_id = INVALID_TASK_ID;
 
+Semaphore_Struct emgConfig_Semaphore;
+Task_Struct emgConfigTask;
+uint8_t emgConfig_data[EMG_CONFIG_LEN];
 /*********************************************************************
 * Profile Attributes - variables
 */
@@ -136,6 +142,7 @@ static gattCharCfg_t *emg_StreamConfig;
 static char emg_UserStreamString[] = "EMG Data";
 static char emg_UserConfigString[] = "EMG Config";
 
+Char emgConfigTaskStack[EMGCONFIG_TASK_STACK_SIZE];
 /*********************************************************************
 * Profile Attributes - Table
 */
@@ -614,4 +621,41 @@ static bStatus_t EMG_Service_WriteAttrCB( uint16_t connHandle, gattAttribute_t *
       pAppCBs->pfnChangeCb( connHandle, EMG_SERVICE_SERV_UUID, paramID, pValue, len+offset ); // Call app function from stack task context.
 
   return status;
+}
+
+static void emgConfig_task(UArg a0, UArg a1)
+{
+	while(1){
+		//Wait for Accelerometer Semaphore
+		Semaphore_pend(Semaphore_handle(&emgConfig_Semaphore), BIOS_WAIT_FOREVER);
+		//Do things with accelConfig_data
+		System_printf("EMG Config data received: %c-%c-%c-%c-%c\n",
+				emgConfig_data[0],emgConfig_data[1],emgConfig_data[2],emgConfig_data[3],emgConfig_data[4]);
+
+		System_flush();
+	}
+}
+
+void emgConfig_createTask(void) {
+	Task_Params taskParams;
+	Semaphore_Params emgConfig_semaphoreParams;
+
+	// Configure & construct semaphore
+	Semaphore_Params_init(&emgConfig_semaphoreParams);
+	Semaphore_construct(&emgConfig_Semaphore, 0, &emgConfig_semaphoreParams);
+
+	// Configure task
+	Task_Params_init(&taskParams);
+	taskParams.stack = emgConfigTaskStack;
+	taskParams.stackSize = EMGCONFIG_TASK_STACK_SIZE;
+	taskParams.priority = EMGCONFIG_TASK_PRIORITY;
+
+	//Dynamically construct task
+	Task_construct(&emgConfigTask, emgConfig_task, &taskParams, NULL);
+}
+
+void emgConfig_SwiFxn(void) {
+	//Post semaphore to emg_taskFxn
+	Semaphore_post(Semaphore_handle(&emgConfig_Semaphore));
+
 }

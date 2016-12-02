@@ -36,6 +36,7 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 #include "DigiPot.h"
 #include "accelerometer.h"
 
+
 //TI-RTOS Header Files
 #include <uart_logs.h>
 
@@ -121,6 +122,9 @@ int main() {
 	// MPU2650 Accelerometer (SPI) - Priority 2
 	accel_createTask();
 
+	//BLE Services
+	accelConfig_createTask();
+	emgConfig_createTask();
 	//**********************************************************************************
 	// Enable Interrupts & start SYS/BIOS
 	//**********************************************************************************
