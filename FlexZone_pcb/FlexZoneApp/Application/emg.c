@@ -18,6 +18,7 @@
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/family/arm/cc26xx/Power.h>
 #include <ti/sysbios/BIOS.h>				//required for BIOS_WAIT_FOREVER in Semaphore_pend();
+#include <ti/sysbios/hal/Seconds.h>
 
 //TI-RTOS Header Files
 #include <ti/drivers/PIN.h>
@@ -29,6 +30,7 @@
 //Board Specific Header Files
 #include "Board.h"
 #include "emg.h"
+#include "DigiPot.h"
 
 //Standard Header Files
 
@@ -37,14 +39,18 @@
 //**********************************************************************************
 #define EMG_TASK_PRIORITY				   	2
 #ifndef EMG_TASK_STACK_SIZE
-#define EMG_TASK_STACK_SIZE               	800
+#define EMG_TASK_STACK_SIZE               	400
 #endif
 
-#define EMG_PERIOD_IN_MS					20
+#define EMG_PERIOD_IN_MS					50
 #define EMG_MOVING_WINDOW					1
-#define REP_THRESHHOLD_HIGH 				1900
-#define REP_THRESHHOLD_LOW  				900
+#define REP_THRESHHOLD_HIGH 				1600
+#define REP_THRESHHOLD_LOW  				800
 #define EMG_NUMBER_OF_SAMPLES_READING		4
+
+#define STARTTIME							1412800000
+#define TIMEOUT_SET							(10*60)	// in seconds
+#define TIMEOUT_REP							(30)	// in seconds
 //**********************************************************************************
 // Global Data Structures
 //**********************************************************************************
@@ -66,6 +72,14 @@ uint16_t adcCounter = 0;
 //EMG processing
 EMG_stats emgSets[10];
 EMG_stats emg_set_stats;
+EMG_stats dummyStats = {
+		{82825,98052,57570,24804,82378,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{98242,21693,64324,25327,74264,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{92571,29080,46664,57097,39311,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{48519,40001,29995,98845,65948,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		5,
+		1
+};
 double lastAverage=-1;
 uint64_t pulseStart=0, pulseEnd=0;
 uint64_t deadStart=0, deadEnd=0;
@@ -76,8 +90,9 @@ uint8_t inRep = 0;
 PIN_Handle emgPinHandle;
 PIN_State emgPinState;
 const PIN_Config emgPins[] = {
-		IOID_13 | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,	// AUXIO1
-		IOID_7 | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,	// AUXIO7
+		Board_CH0_IN | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,	// AUXIO1
+		Board_CH1_IN | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,	// AUXIO7
+		IOID_29 | PIN_INPUT_DIS | PIN_GPIO_OUTPUT_DIS,	// AUXIO1
 		PIN_TERMINATE
 };
 
@@ -85,7 +100,7 @@ const PIN_Config emgPins[] = {
 PIN_Handle analogPinHandle;
 PIN_State analogPinState;
 const PIN_Config analogPinTable[] = {
-		IOID_1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+		Board_ANALOG_EN | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 		PIN_TERMINATE
 };
 
@@ -140,7 +155,25 @@ void emg_createTask(void) {
 static void emg_init(void) {
 	adc_init();
 	analog_init();
+	Seconds_set(STARTTIME);
 
+	digiPot_spi_init();
+	uint8_t counter = 20, i;
+
+	for (i = 0; i < 5; i++)
+	{
+		set_Wiper(counter,0);
+		set_Wiper(counter + 20,1);
+		counter += 10;
+#if defined(UART_PRINT)
+		Log_info1("\tpot0: %d\r", read_ISL(0x00, 0));
+		Log_info1("\tpot1: %d\r", read_ISL(0x00, 1));
+#else
+		System_printf("\tpot0: %d\r\n", read_ISL(0x00, 0));
+		System_printf("\tpot1: %d\r\n", read_ISL(0x00, 1));
+		System_flush();
+#endif
+	}
 	//Configure clock object
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
@@ -165,6 +198,10 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	Timestamp_getFreq(&freq);
 	uint32_t repCount = 0;
 	uint16_t pulsePeak = 0;
+
+	uint8_t activeSet = 0;
+	uint32_t t_start, t_end;
+	t_start = Seconds_get();
 
 	while (1)
 	{
@@ -233,9 +270,13 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 						emg_set_stats.pulseWidth[repCount] = pulseWidth;
 						repCount++;
 
+						#if defined(USE_UART)
+						Log_info1("get big my mans: %u", repCount);
+						#else
 						System_printf("get big my mans: %u\n", repCount);
 						System_flush();
-						user_sendEmgPacket(&repCount, 4, 0);
+						#endif // USE_UART
+//						user_sendEmgPacket(&repCount, 4, 0);
 					}
 				}
 				rawAdc[i] = 0;
@@ -246,10 +287,8 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		emg_set_stats.numReps = repCount;
 		processingDone = 1;
 
-		timeEnd = Timestamp_get32();
-		timeProcessing = timeEnd - timeStart;
-		usProcessing = (timeProcessing*1000000)/freq.lo;
-//		System_printf("EMG Thread: Processing Time = %u\n", usProcessing);
+		t_end = Seconds_get();
+//		System_printf("Time elapsed in secs: %d\n", t_end - t_start);
 //		System_flush();
 	}
 }
@@ -274,8 +313,13 @@ static void emgPoll_SwiFxn(UArg a0) {
 		}
 
 		rawAdc[adcCounter++] = localSum/EMG_NUMBER_OF_SAMPLES_READING;
-//		System_printf("EMG Thread: ADC result = %u\n", rawAdc[adcCounter-1]);
-//		System_flush();
+
+#if defined(USE_UART)
+			Log_info1("adc: %u", rawAdc[adcCounter-1]);
+#else
+//			System_printf("adc reading: %d\n", rawAdc[adcCounter-1]);
+//			System_flush();
+#endif // USE_UART
 
 		if (EMG_NUMBER_OF_SAMPLES_SLICE == adcCounter)
 		{
@@ -287,8 +331,12 @@ static void emgPoll_SwiFxn(UArg a0) {
 	}
 	else
 	{
+#if defined(USE_UART)
+		Log_info0("Missed deadline");
+#else
 		System_printf("Missed deadline\n");
 		System_flush();
+#endif //USE_UART
 	}
 }
 
@@ -315,7 +363,7 @@ void adc_init() {
 //	while (AUX_WUC_CLOCK_READY != AUXWUCClockStatus(AUX_WUC_ADC_CLOCK));
 
 	//Configure ADC to use DIO7 (AUXIO7) on manual trigger.
-	AUXADCSelectInput(ADC_COMPB_IN_AUXIO7);
+	AUXADCSelectInput(BOARD_CH0_AUX);
 }
 
 /**
@@ -350,5 +398,5 @@ uint32_t read_adc() {
  */
 void analog_init() {
 	analogPinHandle = PIN_open(&analogPinState, analogPinTable);
-    PIN_setOutputValue(analogPinHandle, IOID_1, 1);
+    PIN_setOutputValue(analogPinHandle, Board_ANALOG_EN, 1);
 }

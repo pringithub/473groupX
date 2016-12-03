@@ -33,12 +33,7 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 #include "FlexZoneGlobals.h"
 #include "FlexZone.h"
 #include "emg.h"
-#include "DigiPot.h"
 #include "accelerometer.h"
-
-
-//TI-RTOS Header Files
-#include <uart_logs.h>
 
 //**********************************************************************************
 // Required Definitions
@@ -90,7 +85,6 @@ void halAssertHandler(void) {
 //**********************************************************************************
 int main() {
 	PIN_init(BoardGpioInitTable);
-	//digiPot_spi_init();
 
 #ifndef POWER_SAVING
 	/* Set constraints for Standby, powerdown and idle mode */
@@ -98,10 +92,12 @@ int main() {
 	Power_setConstraint(Power_IDLE_PD_DISALLOW);
 #endif // POWER_SAVING
 
+#if defined(USE_UART)
 	//Initialize the RTOS Log formatting and output to UART in Idle thread.
 	//Note: Define xdc_runtime_Log_DISABLE_ALL to remove all impact of Log.
 	//Note: NULL as Params gives 115200,8,N,1 and Blocking mode
-	//UartLog_init(UART_open(Board_UART, NULL));
+	UartLog_init(UART_open(Board_UART, NULL));
+#endif // USE_UART
 
 	//Initialize ICall module
 	ICall_init();
@@ -123,8 +119,8 @@ int main() {
 	accel_createTask();
 
 	//BLE Services
-	accelConfig_createTask();
-	emgConfig_createTask();
+//	accelConfig_createTask();
+//	emgConfig_createTask();
 	//**********************************************************************************
 	// Enable Interrupts & start SYS/BIOS
 	//**********************************************************************************

@@ -32,7 +32,7 @@
 //**********************************************************************************
 #define ACCEL_TASK_PRIORITY					1
 #ifndef ACCEL_TASK_STACK_SIZE
-#define ACCEL_TASK_STACK_SIZE              600
+#define ACCEL_TASK_STACK_SIZE              400
 #endif
 
 #define ACCEL_PERIOD_IN_MS					300
@@ -127,11 +127,14 @@ static void accel_taskFxn(UArg a0, UArg a1) {
 //		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
 //		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
 //		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
-//		Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
-//      Log_info3("Accel Thread:  GYRO (XYZ) \t%d\t%d\t%d", (IArg)xg_res, (IArg)yg_res, (IArg)zg_res);
+#if defined(USE_UART)
+		Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
+		Log_info3("Accel Thread:  GYRO (XYZ) \t%d\t%d\t%d", (IArg)xg_res, (IArg)yg_res, (IArg)zg_res);
+#else
 //		System_printf("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d\t%d\n", myAccel.ACCEL_X, myAccel.ACCEL_Y, myAccel.ACCEL_Z, i2cRead(0x75));
 //		System_printf("Whoami: %d\n", i2cRead(0x75));
 //		System_flush();
+#endif // USE_UART
 	}
 }
 
