@@ -49,7 +49,7 @@ extern "C" {
  *  ==========================================================================*/
 #include <ti/drivers/PIN.h>
 #include <driverlib/ioc.h>
-
+#include "FlexZoneGlobals.h"
 /** ============================================================================
  *  Externs
  *  ==========================================================================*/
@@ -75,10 +75,17 @@ extern const PIN_Config BoardGpioInitTable[];
  */
 
 /* UART Board */
+#if defined(USE_UART)
+#define Board_UART_RX               IOID_2          /* RXD  */
+#define Board_UART_TX               IOID_3          /* TXD  */
+#define Board_UART_CTS              IOID_19         /* CTS  */
+#define Board_UART_RTS              IOID_18         /* RTS */
+#else
 #define Board_UART_RX               PIN_UNASSIGNED          /* RXD  */
 #define Board_UART_TX               PIN_UNASSIGNED          /* TXD  */
 #define Board_UART_CTS              PIN_UNASSIGNED         /* CTS  */
 #define Board_UART_RTS              PIN_UNASSIGNED         /* RTS */
+#endif // USE_UART
 
 /* SPI Board */
 #define Board_SPI0_MISO             IOID_8          /* RF1.20 */
@@ -117,6 +124,18 @@ extern const PIN_Config BoardGpioInitTable[];
 #define Board_DIO28_ANALOG          IOID_28
 #define Board_DIO29_ANALOG          IOID_29
 #define Board_DIO30_ANALOG          IOID_30
+
+//FlexZone Board Custom
+#define Board_ANALOG_EN				IOID_1
+#define Board_MOTOR_SWITCH			IOID_3
+#define Board_CH0_IN				IOID_13
+#define BOARD_CH0_AUX				ADC_COMPB_IN_AUXIO1
+#define Board_CH1_IN				IOID_7
+#define BOARD_CH1_AUX				ADC_COMPB_IN_AUXIO7
+
+#define DIGIPOT_0_CS				IOID_0
+#define DIGIPOT_1_CS				IOID_2
+
 
 
 /** ============================================================================

@@ -83,7 +83,7 @@
 #define PRZ_TASK_PRIORITY                     4
 
 #ifndef PRZ_TASK_STACK_SIZE
-#define PRZ_TASK_STACK_SIZE                   800
+#define PRZ_TASK_STACK_SIZE                   600
 #endif
 
 // Internal Events for RTOS application

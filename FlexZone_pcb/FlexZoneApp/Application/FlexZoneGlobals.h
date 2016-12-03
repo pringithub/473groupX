@@ -14,6 +14,10 @@
 /* XDCtools Header files */
 #include <xdc/std.h>
 #include <xdc/runtime/System.h>
+#include <xdc/runtime/Log.h>
+#include <xdc/runtime/Diags.h>
+#include <uart_logs.h>
+#include <ti/drivers/UART.h>
 
 //SYS/BIOS Header Files
 #include <ti/sysbios/knl/Semaphore.h>
@@ -22,6 +26,7 @@
 // Required Definitions
 //**********************************************************************************
 //#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
+//#define USE_UART 							1
 
 //EMG
 #define EMG_NUMBER_OF_SAMPLES_SLICE			50

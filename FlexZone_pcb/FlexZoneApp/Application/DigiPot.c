@@ -21,8 +21,7 @@
 #include "DigiPot.h"
 
 //Standard Header Files
-#include <string.h>
-//#include <stdio.h>
+
 
 //**********************************************************************************
 // Required Definitions
