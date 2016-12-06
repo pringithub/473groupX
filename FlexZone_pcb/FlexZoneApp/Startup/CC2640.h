@@ -101,42 +101,16 @@ extern const PIN_Config BoardGpioInitTable[];
 #define Board_I2C0_SCL0             IOID_10
 #define Board_I2C0_SDA0             IOID_9
 
-/* SPI */
-//#define Board_SPI_FLASH_CS          IOID_20
-#define Board_FLASH_CS_ON           0
-#define Board_FLASH_CS_OFF          1
-
-/* Booster pack generic */
-#define Board_DIO0                  IOID_0
-#define Board_DIO1_RFSW             IOID_1
-#define Board_DIO12                 IOID_12
-#define Board_DIO15                 IOID_15
-#define Board_DIO16_TDO             IOID_16
-#define Board_DIO17_TDI             IOID_17
-#define Board_DIO21                 IOID_21
-#define Board_DIO22                 IOID_22
-
-#define Board_DIO23_ANALOG          IOID_23
-#define Board_DIO24_ANALOG          IOID_24
-#define Board_DIO25_ANALOG          IOID_25
-#define Board_DIO26_ANALOG          IOID_26
-#define Board_DIO27_ANALOG          IOID_27
-#define Board_DIO28_ANALOG          IOID_28
-#define Board_DIO29_ANALOG          IOID_29
-#define Board_DIO30_ANALOG          IOID_30
-
 //FlexZone Board Custom
 #define Board_ANALOG_EN				IOID_1
 #define Board_MOTOR_SWITCH			IOID_3
-#define Board_CH0_IN				IOID_13
-#define BOARD_CH0_AUX				ADC_COMPB_IN_AUXIO1
-#define Board_CH1_IN				IOID_7
-#define BOARD_CH1_AUX				ADC_COMPB_IN_AUXIO7
+#define Board_CH1_IN				IOID_13
+#define BOARD_CH1_AUX				ADC_COMPB_IN_AUXIO1
+#define Board_CH0_IN				IOID_7
+#define BOARD_CH0_AUX				ADC_COMPB_IN_AUXIO7
 
-#define DIGIPOT_0_CS				IOID_0
-#define DIGIPOT_1_CS				IOID_2
-
-
+#define DIGIPOT_1_CS				IOID_0
+#define DIGIPOT_0_CS				IOID_2
 
 /** ============================================================================
  *  Instance identifiers
@@ -163,16 +137,6 @@ typedef enum CC2640_I2CName {
 
     CC2640_I2CCOUNT
 } CC2640_I2CName;
-
-/*!
- *  @def    CC2640_CryptoName
- *  @brief  Enum of Crypto names on the CC2650 dev board
- */
-//typedef enum CC2640_CryptoName {
-//    CC2640_CRYPTO0 = 0,
-//
-//    CC2640_CRYPTOCOUNT
-//} CC2640_CryptoName;
 
 
 /*!

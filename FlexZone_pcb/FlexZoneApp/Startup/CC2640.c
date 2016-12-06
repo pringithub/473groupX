@@ -77,12 +77,7 @@ const PIN_Config BoardGpioInitTable[] = {
 	DIGIPOT_0_CS   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot0 SPI Chip Select */
 	DIGIPOT_1_CS   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot1 SPI Chip Select */
 #endif
-	Board_ANALOG_EN   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Analog Enable */
-//	IOID_11  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Accel SPI Chip Select */
-//	Board_I2C0_SDA0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,      /* SDA0 */
-//	Board_I2C0_SCL0 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,      /* SCL0 */
-//	Board_I2C0_SCL0  | PIN_INPUT_EN | PIN_PULLUP,                                           /* I2C0 */
-//	Board_I2C0_SDA0  | PIN_INPUT_EN | PIN_PULLUP,                                           /* I2C0 */
+	Board_ANALOG_EN   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Analog Enable */
 #if defined(USE_UART)
     Board_UART_RX | PIN_INPUT_EN | PIN_PULLDOWN,                                              /* DevPack */
     Board_UART_TX | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL,                        /* DevPack */

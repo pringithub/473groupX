@@ -100,7 +100,7 @@ const PIN_Config emgPins[] = {
 PIN_Handle analogPinHandle;
 PIN_State analogPinState;
 const PIN_Config analogPinTable[] = {
-		Board_ANALOG_EN | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+		Board_ANALOG_EN | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 		PIN_TERMINATE
 };
 
@@ -116,8 +116,8 @@ static void emg_init(void);
 static void emg_taskFxn(UArg a0, UArg a1);
 static void emgPoll_SwiFxn(UArg a0);
 static void adc_init(void);
-static uint32_t read_adc(void);
-void analog_init();
+static uint32_t read_adc(uint8_t channel);
+void analog_init(void);
 
 //**********************************************************************************
 // Function Definitions
@@ -158,22 +158,26 @@ static void emg_init(void) {
 	Seconds_set(STARTTIME);
 
 	digiPot_spi_init();
+
+	set_Wiper(counter,0);
+	set_Wiper(counter,1);
+
 	uint8_t counter = 20, i;
 
-	for (i = 0; i < 5; i++)
-	{
-		set_Wiper(counter,0);
-		set_Wiper(counter + 20,1);
-		counter += 10;
-#if defined(UART_PRINT)
-		Log_info1("\tpot0: %d\r", read_ISL(0x00, 0));
-		Log_info1("\tpot1: %d\r", read_ISL(0x00, 1));
-#else
-		System_printf("\tpot0: %d\r\n", read_ISL(0x00, 0));
-		System_printf("\tpot1: %d\r\n", read_ISL(0x00, 1));
-		System_flush();
-#endif
-	}
+//	for (i = 0; i < 5; i++)
+//	{
+//		set_Wiper(counter,0);
+//		set_Wiper(counter + 20,1);
+//		counter += 10;
+//#if defined(UART_PRINT)
+//		Log_info1("\tpot0: %d\r", read_ISL(0x00, 0));
+//		Log_info1("\tpot1: %d\r", read_ISL(0x00, 1));
+//#else
+//		System_printf("\tpot0: %d\r\n", read_ISL(0x00, 0));
+//		System_printf("\tpot1: %d\r\n", read_ISL(0x00, 1));
+//		System_flush();
+//#endif
+//	}
 	//Configure clock object
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
@@ -309,16 +313,16 @@ static void emgPoll_SwiFxn(UArg a0) {
 		for (i = 0; i < EMG_NUMBER_OF_SAMPLES_READING; i++)
 		{
 			//Read ADC
-			localSum += read_adc();
+			localSum += read_adc(0);
 		}
 
 		rawAdc[adcCounter++] = localSum/EMG_NUMBER_OF_SAMPLES_READING;
 
 #if defined(USE_UART)
-			Log_info1("adc: %u", rawAdc[adcCounter-1]);
+			Log_info2("adc0: %u \t adc1: %u", rawAdc[adcCounter-1], read_adc(1));
 #else
-//			System_printf("adc reading: %d\n", rawAdc[adcCounter-1]);
-//			System_flush();
+			System_printf("adc0: %u \t adc1: %u\n", rawAdc[adcCounter-1], read_adc(1));
+			System_flush();
 #endif // USE_UART
 
 		if (EMG_NUMBER_OF_SAMPLES_SLICE == adcCounter)
@@ -372,8 +376,13 @@ void adc_init() {
  * @param 	none
  * @return	none
  */
-uint32_t read_adc() {
+uint32_t read_adc(uint8_t channel) {
 	uint32_t temp;
+
+	if (0 == channel)
+		AUXADCSelectInput(BOARD_CH0_AUX);
+	else
+		AUXADCSelectInput(BOARD_CH1_AUX);
 
 	//Enable ADC
 	AUXADCEnableSync(AUXADC_REF_FIXED, AUXADC_SAMPLE_TIME_10P6_US, AUXADC_TRIGGER_MANUAL);
@@ -398,5 +407,5 @@ uint32_t read_adc() {
  */
 void analog_init() {
 	analogPinHandle = PIN_open(&analogPinState, analogPinTable);
-    PIN_setOutputValue(analogPinHandle, Board_ANALOG_EN, 1);
+    PIN_setOutputValue(analogPinHandle, Board_ANALOG_EN, 0);
 }
