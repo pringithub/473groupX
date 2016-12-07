@@ -55,6 +55,7 @@ extern "C"
  */
 #include <bcomdef.h>
 #include "FlexZoneGlobals.h"
+#include <ti/sysbios/knl/Swi.h>
 
 /*********************************************************************
  * CONSTANTS
@@ -76,9 +77,6 @@ extern "C"
 #define ACCEL_STREAM_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
 #define ACCEL_STREAM_LEN                40
 #define ACCEL_STREAM_LEN_MIN            0
-
-#define ACCELCONFIG_TASK_STACK_SIZE		256
-#define ACCELCONFIG_TASK_PRIORITY		3
 /*********************************************************************
  * TYPEDEFS
  */
@@ -155,9 +153,11 @@ extern bStatus_t AccelService_SetParameter( uint8_t param, uint16_t len, void *v
 extern bStatus_t AccelService_GetParameter( uint8_t param, uint16_t *len, void *value );
 
 
-void accelConfig_SwiFxn(void);
+extern Swi_Struct accelConfigSwi;
 
+void accelConfig_SwiFxn(void);
 void accelConfig_createTask(void);
+void accelConfig_createSwi(void);
 /*********************************************************************
 *********************************************************************/
 

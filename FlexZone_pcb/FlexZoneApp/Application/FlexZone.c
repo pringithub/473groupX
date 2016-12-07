@@ -40,6 +40,7 @@
 //#define xdc_runtime_Log_DISABLE_ALL 0 // Add to disable logs from this file
 
 #include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/knl/Swi.h>
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/knl/Queue.h>
 
@@ -175,12 +176,12 @@ static uint8_t advertData[] =
   // complete name
   10,
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', '@'
+  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'D'
 
 };
 
 // GAP GATT Attributes
-static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZone!";
+static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZoneD";
 
 // Globals used for ATT Response retransmission
 static gattMsgEvent_t *pAttRsp = NULL;
@@ -777,7 +778,7 @@ void user_EMGService_ValueChangeHandler(char_data_t *pCharData)
       // -------------------------
       // Copy received data to holder array, ensuring NULL termination.
     	memcpy(emgConfig_data, pCharData->data, EMG_CONFIG_LEN-1);
-  	    emgConfig_SwiFxn();
+        Swi_post(Swi_handle(&emgConfigSwi));
 
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.
@@ -876,7 +877,8 @@ void user_AccelService_ValueChangeHandler(char_data_t *pCharData)
 //      memset(received_string, 0, ACCEL_CONFIG_LEN);
       memcpy(accelConfig_data, pCharData->data, ACCEL_CONFIG_LEN-1);
 
-      accelConfig_SwiFxn();
+      //accelConfig_SwiFxn();
+      Swi_post(Swi_handle(&accelConfigSwi));
 
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.

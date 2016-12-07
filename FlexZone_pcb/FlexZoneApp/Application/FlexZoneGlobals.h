@@ -16,8 +16,7 @@
 #include <xdc/runtime/System.h>
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/Diags.h>
-#include <uart_logs.h>
-#include <ti/drivers/UART.h>
+#include <ti/sysbios/knl/Clock.h>
 
 //SYS/BIOS Header Files
 #include <ti/sysbios/knl/Semaphore.h>
@@ -26,7 +25,7 @@
 // Required Definitions
 //**********************************************************************************
 //#define xdc_runtime_Log_DISABLE_ALL 1  // Add to disable logs from this file
-//#define USE_UART 							1
+#define USE_UART 							1
 
 //EMG
 #define EMG_NUMBER_OF_SAMPLES_SLICE			50
@@ -50,10 +49,22 @@ typedef struct {
 	uint32_t concentricTime[20];
 	//time from peak of rep to end
 	uint32_t eccentricTime[20];
+	uint32_t pulsePeak[20];
+	uint8_t movedOrNah[20];			//1 - moved; 0 - nah
 	uint8_t numReps;
 	uint8_t setDone;
 } EMG_stats;
 
+
+typedef struct {
+	uint8_t targetSetCount;
+	uint8_t targetRepCount;
+	uint16_t maxRestSeconds;
+	uint8_t hapticFeedback;
+	uint8_t imuFeedback;
+} Workout_config;
+
+//Bluetooth stuff
 typedef enum
 {
 	USER_APP_ERROR_OK = 0,			/* No error at user application  */
@@ -81,11 +92,26 @@ extern Semaphore_Struct emgSemaphore;
 extern uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
 extern EMG_stats emg_set_stats;
 extern EMG_stats emgSets[10];
+extern Workout_config myWorkoutConfig;
 
+// Clocks
+extern Clock_Struct emgClock;
+extern Clock_Struct accelClock;
+
+//Data
+extern uint8_t repCount;
 //**********************************************************************************
 // General Functions
 //**********************************************************************************
+//Vibe Motor
+extern void buzz(uint8_t numTimes);
+
+//Bluetooth stuff
 extern user_app_error_type_t user_sendEmgPacket(uint8_t* pData, uint8_t len, app_pkt_type_t packetType);
 extern user_app_error_type_t user_sendAccelPacket(uint8_t* pData, uint8_t len, app_pkt_type_t packetType);
+
+
+//FOR TESTING: DELETE LATERS
+extern void printWorkoutConfig(void);
 
 #endif /* FLEXZONE_GLOBALS_H */

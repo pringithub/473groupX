@@ -42,7 +42,7 @@
 #define EMG_TASK_STACK_SIZE               	400
 #endif
 
-#define EMG_PERIOD_IN_MS					50
+#define EMG_PERIOD_IN_MS					30
 #define EMG_MOVING_WINDOW					1
 #define REP_THRESHHOLD_HIGH 				1600
 #define REP_THRESHHOLD_LOW  				800
@@ -62,7 +62,7 @@ Char emgTaskStack[EMG_TASK_STACK_SIZE];
 Semaphore_Struct emgSemaphore;
 
 //Clock Structures
-static Clock_Struct emgClock;
+Clock_Struct emgClock;
 
 //Global data buffer for ADC samples
 uint32_t rawAdc[EMG_NUMBER_OF_SAMPLES_SLICE];
@@ -73,10 +73,12 @@ uint16_t adcCounter = 0;
 EMG_stats emgSets[10];
 EMG_stats emg_set_stats;
 EMG_stats dummyStats = {
-		{82825,98052,57570,24804,82378,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-		{98242,21693,64324,25327,74264,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-		{92571,29080,46664,57097,39311,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-		{48519,40001,29995,98845,65948,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{82825,98052,57570,24804,82378,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	//pulseWidth
+		{98242,21693,64324,25327,74264,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	//deadWidth
+		{92571,29080,46664,57097,39311,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	//concentricTime
+		{48519,40001,29995,98845,65948,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	//ecentricTime
+		{48519,40001,29995,98845,65948,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	//pulsePeak
+		{0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	//movedOrNah
 		5,
 		1
 };
@@ -85,6 +87,10 @@ uint64_t pulseStart=0, pulseEnd=0;
 uint64_t deadStart=0, deadEnd=0;
 uint8_t processingDone = 1;
 uint8_t inRep = 0;
+uint8_t repCount = 0;
+
+//workout config
+Workout_config myWorkoutConfig;
 
 //EMG Pins
 PIN_Handle emgPinHandle;
@@ -157,36 +163,20 @@ static void emg_init(void) {
 	analog_init();
 	Seconds_set(STARTTIME);
 
+#ifndef USE_UART
 	digiPot_spi_init();
+#endif //USE_UART
 
-	set_Wiper(counter,0);
-	set_Wiper(counter,1);
-
-	uint8_t counter = 20, i;
-
-//	for (i = 0; i < 5; i++)
-//	{
-//		set_Wiper(counter,0);
-//		set_Wiper(counter + 20,1);
-//		counter += 10;
-//#if defined(UART_PRINT)
-//		Log_info1("\tpot0: %d\r", read_ISL(0x00, 0));
-//		Log_info1("\tpot1: %d\r", read_ISL(0x00, 1));
-//#else
-//		System_printf("\tpot0: %d\r\n", read_ISL(0x00, 0));
-//		System_printf("\tpot1: %d\r\n", read_ISL(0x00, 1));
-//		System_flush();
-//#endif
-//	}
 	//Configure clock object
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
 	clockParams.arg = (UArg) 1;
 	clockParams.period = EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod);
-	clockParams.startFlag = TRUE;	//Indicates to start immediately
+	clockParams.startFlag = FALSE;	//Indicates to start immediately
 
 	//Dynamically Construct Clock
-	Clock_construct(&emgClock, emgPoll_SwiFxn, EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+//	Clock_construct(&emgClock, emgPoll_SwiFxn, EMG_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+	Clock_construct(&emgClock, emgPoll_SwiFxn, 0, &clockParams);
 }
 
 /**
@@ -200,7 +190,6 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	emg_init();
 	uint64_t pulseTickCounter = 0, deadTickCounter = 0;
 	Timestamp_getFreq(&freq);
-	uint32_t repCount = 0;
 	uint16_t pulsePeak = 0;
 
 	uint8_t activeSet = 0;
@@ -223,6 +212,8 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 				if (lastAverage >= REP_THRESHHOLD_LOW)
 				{
 				  inRep = 1;
+				  if (myWorkoutConfig.imuFeedback)
+						Clock_start(Clock_handle(&accelClock));
 
 				  deadWidth = deadTickCounter*EMG_PERIOD_IN_MS;
 				  emg_set_stats.deadWidth[repCount] = deadWidth;
@@ -280,6 +271,11 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 						System_printf("get big my mans: %u\n", repCount);
 						System_flush();
 						#endif // USE_UART
+
+						Clock_stop(Clock_handle(&emgClock));
+
+						if (myWorkoutConfig.imuFeedback)
+							Clock_stop(Clock_handle(&accelClock));
 //						user_sendEmgPacket(&repCount, 4, 0);
 					}
 				}
@@ -292,8 +288,13 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		processingDone = 1;
 
 		t_end = Seconds_get();
-//		System_printf("Time elapsed in secs: %d\n", t_end - t_start);
+
+//#if defined(USE_UART)
+//		Log_info1("Time elapsed in secs: %u", t_end - t_start);
+//#else
+//		System_printf("Time elapsed in secs: %u\n", t_end - t_start);
 //		System_flush();
+//#endif //USE_UART
 	}
 }
 
@@ -318,15 +319,17 @@ static void emgPoll_SwiFxn(UArg a0) {
 
 		rawAdc[adcCounter++] = localSum/EMG_NUMBER_OF_SAMPLES_READING;
 
-#if defined(USE_UART)
-			Log_info2("adc0: %u \t adc1: %u", rawAdc[adcCounter-1], read_adc(1));
-#else
-			System_printf("adc0: %u \t adc1: %u\n", rawAdc[adcCounter-1], read_adc(1));
-			System_flush();
-#endif // USE_UART
+//#if defined(USE_UART)
+//			Log_info2("adc0: %u \t adc1: %u", rawAdc[adcCounter-1], read_adc(1));
+//#else
+//			System_printf("adc0: %u \t adc1: %u\n", rawAdc[adcCounter-1], read_adc(1));
+//			System_flush();
+//#endif // USE_UART
 
 		if (EMG_NUMBER_OF_SAMPLES_SLICE == adcCounter)
 		{
+			printWorkoutConfig();
+//			buzz(1);
 			adcCounter = 0;
 			processingDone = 0;
 			//Post semaphore to emg_taskFxn
@@ -359,12 +362,6 @@ void adc_init() {
 
 	//Initialize AUX, ADI, and ADC Clocks
 	AUXWUCClockEnable(AUX_WUC_MODCLKEN0_ANAIF_M | AUX_WUC_MODCLKEN0_AUX_ADI4_M);
-
-	//Old clock stuff
-//	AUXWUCClockEnable(AUX_WUC_SOC_CLOCK | AUX_WUC_ADI_CLOCK | AUX_WUC_ADC_CLOCK);
-//
-//	//Wait for ADC clock to be ready
-//	while (AUX_WUC_CLOCK_READY != AUXWUCClockStatus(AUX_WUC_ADC_CLOCK));
 
 	//Configure ADC to use DIO7 (AUXIO7) on manual trigger.
 	AUXADCSelectInput(BOARD_CH0_AUX);

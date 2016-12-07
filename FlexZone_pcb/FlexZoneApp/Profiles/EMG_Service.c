@@ -72,7 +72,8 @@
 /*********************************************************************
  * CONSTANTS
  */
-
+#define EMGCONFIG_TASK_STACK_SIZE		256
+#define EMGCONFIG_TASK_PRIORITY			3
 /*********************************************************************
  * TYPEDEFS
  */
@@ -109,6 +110,7 @@ static uint8_t emg_icall_rsp_task_id = INVALID_TASK_ID;
 
 Semaphore_Struct emgConfig_Semaphore;
 Task_Struct emgConfigTask;
+Swi_Struct emgConfigSwi;
 uint8_t emgConfig_data[EMG_CONFIG_LEN];
 /*********************************************************************
 * Profile Attributes - variables
@@ -623,16 +625,28 @@ static bStatus_t EMG_Service_WriteAttrCB( uint16_t connHandle, gattAttribute_t *
   return status;
 }
 
+void saveWorkoutConfig() {
+	myWorkoutConfig.targetSetCount=emgConfig_data[0];
+	myWorkoutConfig.targetRepCount=emgConfig_data[1];
+	myWorkoutConfig.maxRestSeconds=emgConfig_data[2]*30;
+	myWorkoutConfig.hapticFeedback=emgConfig_data[3];
+	myWorkoutConfig.imuFeedback=emgConfig_data[4];
+}
+
 static void emgConfig_task(UArg a0, UArg a1)
 {
 	while(1){
 		//Wait for Accelerometer Semaphore
 		Semaphore_pend(Semaphore_handle(&emgConfig_Semaphore), BIOS_WAIT_FOREVER);
 		//Do things with accelConfig_data
+#if defined(USE_UART)
+		Log_info5("EMG Config data received: %c-%c-%c-%c-%c",
+				emgConfig_data[0]+'0',emgConfig_data[1]+'0',emgConfig_data[2]+'0',emgConfig_data[3]+'0',emgConfig_data[4]+'0');
+#else
 		System_printf("EMG Config data received: %c-%c-%c-%c-%c\n",
 				emgConfig_data[0],emgConfig_data[1],emgConfig_data[2],emgConfig_data[3],emgConfig_data[4]);
-
 		System_flush();
+#endif //USE_UART
 	}
 }
 
@@ -654,8 +668,21 @@ void emgConfig_createTask(void) {
 	Task_construct(&emgConfigTask, emgConfig_task, &taskParams, NULL);
 }
 
+void emgConfig_createSwi(void) {
+	Swi_Params emgParams;
+
+	// Configure Swi
+	Swi_Params_init(&emgParams);
+
+	//Dynamically construct task
+	Swi_construct(&emgConfigSwi,(Swi_FuncPtr)emgConfig_SwiFxn, &emgParams, NULL);
+}
+
 void emgConfig_SwiFxn(void) {
 	//Post semaphore to emg_taskFxn
-	Semaphore_post(Semaphore_handle(&emgConfig_Semaphore));
+	saveWorkoutConfig();
+	buzz(2);
+	Clock_start(Clock_handle(&emgClock));
 
+	Semaphore_post(Semaphore_handle(&emgConfig_Semaphore));
 }

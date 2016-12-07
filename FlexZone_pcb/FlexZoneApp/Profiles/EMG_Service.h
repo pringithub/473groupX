@@ -55,6 +55,7 @@ extern "C"
  */
 #include <bcomdef.h>
 #include "FlexZoneGlobals.h"
+#include <ti/sysbios/knl/Swi.h>
 
 /*********************************************************************
  * CONSTANTS
@@ -76,9 +77,6 @@ extern "C"
 #define EMG_STREAM_UUID_BASE128(uuid) 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, 0x00, 0x40, 0x51, 0x04, LO_UINT16(uuid), HI_UINT16(uuid), 0x00, 0xF0
 #define EMG_STREAM_LEN                40
 #define EMG_STREAM_LEN_MIN            0
-
-#define EMGCONFIG_TASK_STACK_SIZE		256
-#define EMGCONFIG_TASK_PRIORITY			3
 /*********************************************************************
  * TYPEDEFS
  */
@@ -155,9 +153,12 @@ extern bStatus_t EMGService_SetParameter( uint8_t param, uint16_t len, void *val
 extern bStatus_t EMGService_GetParameter( uint8_t param, uint16_t *len, void *value );
 
 
-void emgConfig_SwiFxn(void);
+extern Swi_Struct emgConfigSwi;
 
+void emgConfig_SwiFxn(void);
 void emgConfig_createTask(void);
+void emgConfig_createSwi(void);
+void saveWorkoutConfig(void);
 /*********************************************************************
 *********************************************************************/
 

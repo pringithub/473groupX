@@ -32,7 +32,7 @@
 //**********************************************************************************
 #define ACCEL_TASK_PRIORITY					1
 #ifndef ACCEL_TASK_STACK_SIZE
-#define ACCEL_TASK_STACK_SIZE              400
+#define ACCEL_TASK_STACK_SIZE              600
 #endif
 
 #define ACCEL_PERIOD_IN_MS					300
@@ -49,7 +49,7 @@ Char accelTaskStack[ACCEL_TASK_STACK_SIZE];
 Semaphore_Struct accelSemaphore;
 
 //Clock Structures
-static Clock_Struct accelClock;
+Clock_Struct accelClock;
 
 Accel_State myAccel;
 
@@ -100,12 +100,11 @@ void accel_init()
 	//Configure clock object
 	Clock_Params clockParams;
 	Clock_Params_init(&clockParams);
-	clockParams.arg = (UArg) 1;
 	clockParams.period = ACCEL_PERIOD_IN_MS * (1000 / Clock_tickPeriod);
-	clockParams.startFlag = TRUE;	//Indicates to start immediately
+	clockParams.startFlag = FALSE;	//Indicates to start immediately
 
 	//Dynamically Construct Clock
-	Clock_construct(&accelClock, accel_SwiFxn, ACCEL_PERIOD_IN_MS * (1000 / Clock_tickPeriod), &clockParams);
+	Clock_construct(&accelClock, accel_SwiFxn, 0, &clockParams);
 }
 
 /**
@@ -124,12 +123,11 @@ static void accel_taskFxn(UArg a0, UArg a1) {
 		myAccel.ACCEL_X = read_MPU(X_AXIS, ACCEL);
 		myAccel.ACCEL_Y = read_MPU(Y_AXIS, ACCEL);
 		myAccel.ACCEL_Z = read_MPU(Z_AXIS, ACCEL);
-//		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
-//		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
-//		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
+		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
+		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
+		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
 #if defined(USE_UART)
 		Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
-		Log_info3("Accel Thread:  GYRO (XYZ) \t%d\t%d\t%d", (IArg)xg_res, (IArg)yg_res, (IArg)zg_res);
 #else
 //		System_printf("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d\t%d\n", myAccel.ACCEL_X, myAccel.ACCEL_Y, myAccel.ACCEL_Z, i2cRead(0x75));
 //		System_printf("Whoami: %d\n", i2cRead(0x75));

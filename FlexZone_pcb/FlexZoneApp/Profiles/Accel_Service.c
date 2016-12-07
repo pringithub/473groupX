@@ -72,7 +72,8 @@
 /*********************************************************************
  * CONSTANTS
  */
-
+#define ACCELCONFIG_TASK_STACK_SIZE		256
+#define ACCELCONFIG_TASK_PRIORITY		3
 /*********************************************************************
  * TYPEDEFS
  */
@@ -109,6 +110,7 @@ static uint8_t accel_icall_rsp_task_id = INVALID_TASK_ID;
 
 Semaphore_Struct accelConfig_Semaphore;
 Task_Struct accelConfigTask;
+Swi_Struct accelConfigSwi;
 uint8_t accelConfig_data[ACCEL_CONFIG_LEN];
 /*********************************************************************
 * Profile Attributes - variables
@@ -630,9 +632,14 @@ static void accelConfig_task(UArg a0, UArg a1)
 		//Wait for Accelerometer Semaphore
 		Semaphore_pend(Semaphore_handle(&accelConfig_Semaphore), BIOS_WAIT_FOREVER);
 		//Do things with accelConfig_data
+#if defined(USE_UART)
+		Log_info5("Accel Config data received: %c-%c-%c-%c-%c",
+				accelConfig_data[0]+'0',accelConfig_data[1]+'0',accelConfig_data[2]+'0',accelConfig_data[3]+'0',accelConfig_data[4]+'0');
+#else
 		System_printf("Accel Config data received: %c-%c-%c-%c-%c\n",
-				accelConfig_data[0],accelConfig_data[1],accelConfig_data[2],accelConfig_data[3],accelConfig_data[4]);
+				accelConfig_data[0]+'0',accelConfig_data[1]+'0',accelConfig_data[2]+'0',accelConfig_data[3]+'0',accelConfig_data[4]+'0');
 		System_flush();
+#endif //USE_UART
 	}
 }
 
@@ -651,7 +658,17 @@ void accelConfig_createTask(void) {
 	taskParams.priority = ACCELCONFIG_TASK_PRIORITY;
 
 	//Dynamically construct task
-	Task_construct(&accelConfigTask, accelConfig_task, &taskParams, NULL);
+	Task_construct(&accelConfigTask,(Swi_FuncPtr)accelConfig_task, &taskParams, NULL);
+}
+
+void accelConfig_createSwi(void) {
+	Swi_Params swiParams;
+
+	// Configure Swi
+	Swi_Params_init(&swiParams);
+
+	//Dynamically construct task
+	Swi_construct(&accelConfigSwi,(Swi_FuncPtr)accelConfig_SwiFxn, &swiParams, NULL);
 }
 
 void accelConfig_SwiFxn(void) {
