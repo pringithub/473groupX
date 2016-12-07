@@ -73,16 +73,15 @@
 #endif
 
 const PIN_Config BoardGpioInitTable[] = {
-#ifndef USE_UART
-	DIGIPOT_0_CS   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot0 SPI Chip Select */
-	DIGIPOT_1_CS   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot1 SPI Chip Select */
-#endif
-	Board_ANALOG_EN   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Analog Enable */
 #if defined(USE_UART)
     Board_UART_RX | PIN_INPUT_EN | PIN_PULLDOWN,                                              /* DevPack */
     Board_UART_TX | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL,                        /* DevPack */
+#else	//Conflict on devboard RX and Digipot CS
+	DIGIPOT_0_CS   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot0 SPI Chip Select */
+	DIGIPOT_1_CS   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Digipot1 SPI Chip Select */
 #endif // USE_UART
-
+	Board_ANALOG_EN   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Analog Enable */
+	Board_VIBE_MOTOR   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,			/* Vibe Motor */
     PIN_TERMINATE
 };
 
@@ -114,6 +113,7 @@ const PIN_Config BoardGpioInitTable[] = {
 /*
  *  ============================= UART begin ===================================
  */
+#if defined(USE_UART)
 #if defined(__TI_COMPILER_VERSION__)
 #pragma DATA_SECTION(UART_config, ".const:UART_config")
 #pragma DATA_SECTION(uartCC26XXHWAttrs, ".const:uartCC26XXHWAttrs")
@@ -151,6 +151,7 @@ const UART_Config UART_config[] = {
     },
     {NULL, NULL, NULL}
 };
+#endif //USE_UART
 /*
  *  ============================= UART end =====================================
  */

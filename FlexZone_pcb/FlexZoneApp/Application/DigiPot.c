@@ -128,8 +128,12 @@ void digiPot_spi_init(void)
 	// Open SPI CS pin
 	digiPot_spiCsPinHandle = PIN_open(&digiPot_spiCsPinState, digiPot_spiCsPinTable);
 	if (!digiPot_spiCsPinHandle) {
+#if defined(USE_UART)
+		Log_info0("Error initializing digipot SPI1 CS pins");
+#else
 		System_printf("Error initializing digipot SPI1 CS pins\n");
 		System_flush();
+#endif //USE_UART
 	}
 
 	// Initialize SPI parameters

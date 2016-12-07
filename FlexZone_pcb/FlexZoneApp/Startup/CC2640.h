@@ -103,10 +103,21 @@ extern const PIN_Config BoardGpioInitTable[];
 
 //FlexZone Board Custom
 #define Board_ANALOG_EN				IOID_1
-#define Board_MOTOR_SWITCH			IOID_3
+#if defined(USE_UART)
+#define Board_VIBE_MOTOR			IOID_5
+#else
+#define Board_VIBE_MOTOR			IOID_3
+#endif
+
+#if defined(USE_UART)
+#define Board_CH1_IN				IOID_29
+#define Board_CH0_IN				IOID_23
+#else
 #define Board_CH1_IN				IOID_13
-#define BOARD_CH1_AUX				ADC_COMPB_IN_AUXIO1
 #define Board_CH0_IN				IOID_7
+#endif //USE_UART
+
+#define BOARD_CH1_AUX				ADC_COMPB_IN_AUXIO1
 #define BOARD_CH0_AUX				ADC_COMPB_IN_AUXIO7
 
 #define DIGIPOT_1_CS				IOID_0

@@ -18,6 +18,8 @@
 //SYS/BIOS Header Files
 #include <ti/sysbios/family/arm/cc26xx/Power.h>
 #include <ti/sysbios/BIOS.h>
+#include <uart_logs.h>
+#include <ti/drivers/UART.h>
 
 //BLE Header Files
 #include "ICall.h"
@@ -34,6 +36,7 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 #include "FlexZone.h"
 #include "emg.h"
 #include "accelerometer.h"
+#include "vibe.h"
 
 //**********************************************************************************
 // Required Definitions
@@ -42,6 +45,7 @@ bleUserCfg_t user0Cfg = BLE_USER_CFG;
 //**********************************************************************************
 // Global Data Structures
 //**********************************************************************************
+
 
 //**********************************************************************************
 // Function Definitions
@@ -80,6 +84,8 @@ void halAssertHandler(void) {
 	for (;;)
 		;
 }
+
+
 //**********************************************************************************
 // Main
 //**********************************************************************************
@@ -111,20 +117,38 @@ int main() {
 	//**********************************************************************************
 	// Thread Initialization
 	//**********************************************************************************
-	//BlE task - Priority 3
+	//BlE task - Priority 4
 	FlexZone_createTask();
 	//EMG task - Priority 1
 	emg_createTask();
 	// MPU2650 Accelerometer (SPI) - Priority 2
 	accel_createTask();
 
-	//BLE Services
+	//BLE Services - Priority 3
+//	accelConfig_createSwi();
 //	accelConfig_createTask();
-//	emgConfig_createTask();
+	emgConfig_createSwi();
+	emgConfig_createTask();
+
+	//Vibration Motor Task - Priority 1
+	vibe_createTask();
 	//**********************************************************************************
 	// Enable Interrupts & start SYS/BIOS
 	//**********************************************************************************
 	BIOS_start();
 
 	return 0;
+}
+
+void printWorkoutConfig(void) {
+#if defined(USE_UART)
+		Log_info5("Sets: %u Reps: %u Rest: %u Haptic: %u IMU: %u",
+				myWorkoutConfig.targetSetCount,myWorkoutConfig.targetRepCount,myWorkoutConfig.maxRestSeconds,
+				myWorkoutConfig.hapticFeedback,myWorkoutConfig.imuFeedback);
+#else
+		System_printf("Sets: %u Reps: %u Rest: %u Haptic: %u IMU: %un",
+				myWorkoutConfig.targetSetCount,myWorkoutConfig.targetRepCount,myWorkoutConfig.maxRestSeconds,
+				myWorkoutConfig.hapticFeedback,myWorkoutConfig.imuFeedback);
+		System_flush();
+#endif //USE_UART
 }
