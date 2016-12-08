@@ -113,104 +113,104 @@ Task_Struct accelConfigTask;
 Swi_Struct accelConfigSwi;
 uint8_t accelConfig_data[ACCEL_CONFIG_LEN];
 /*********************************************************************
-* Profile Attributes - variables
-*/
+//* Profile Attributes - variables
+//*/
+//
+//// Service declaration
+//static CONST gattAttrType_t AccelServiceDecl = { ATT_UUID_SIZE, AccelServiceUUID };
+//
+//// Characteristic "Config" Properties (for declaration)
+//static uint8_t accel_ConfigProps = GATT_PROP_READ | GATT_PROP_WRITE;
+//
+//// Characteristic "Config" Value variable
+//static uint8_t accel_ConfigVal[ACCEL_CONFIG_LEN] = {0};
+//
+//// Length of data in characteristic "Config" Value variable, initialized to minimal size.
+//static uint16_t accel_ConfigValLen = ACCEL_CONFIG_LEN_MIN;
+//
+//
+//// Characteristic "Stream" Properties (for declaration)
+//static uint8_t accel_StreamProps = GATT_PROP_NOTIFY | GATT_PROP_WRITE_NO_RSP;
+//
+//// Characteristic "Stream" Value variable
+//static uint8_t accel_StreamVal[ACCEL_STREAM_LEN] = {0};
+//
+//// Length of data in characteristic "Stream" Value variable, initialized to minimal size.
+//static uint16_t accel_StreamValLen = ACCEL_STREAM_LEN_MIN;
+//
+//// Characteristic "Stream" Client Characteristic Configuration Descriptor
+//static gattCharCfg_t *accel_StreamConfig;
 
-// Service declaration
-static CONST gattAttrType_t AccelServiceDecl = { ATT_UUID_SIZE, AccelServiceUUID };
+//static char accel_UserStreamString[] = "Accelerometer Data";
+//static char accel_UserConfigString[] = "Accelerometer Config";
 
-// Characteristic "Config" Properties (for declaration)
-static uint8_t accel_ConfigProps = GATT_PROP_READ | GATT_PROP_WRITE;
-
-// Characteristic "Config" Value variable
-static uint8_t accel_ConfigVal[ACCEL_CONFIG_LEN] = {0};
-
-// Length of data in characteristic "Config" Value variable, initialized to minimal size.
-static uint16_t accel_ConfigValLen = ACCEL_CONFIG_LEN_MIN;
-
-
-// Characteristic "Stream" Properties (for declaration)
-static uint8_t accel_StreamProps = GATT_PROP_NOTIFY | GATT_PROP_WRITE_NO_RSP;
-
-// Characteristic "Stream" Value variable
-static uint8_t accel_StreamVal[ACCEL_STREAM_LEN] = {0};
-
-// Length of data in characteristic "Stream" Value variable, initialized to minimal size.
-static uint16_t accel_StreamValLen = ACCEL_STREAM_LEN_MIN;
-
-// Characteristic "Stream" Client Characteristic Configuration Descriptor
-static gattCharCfg_t *accel_StreamConfig;
-
-static char accel_UserStreamString[] = "Accelerometer Data";
-static char accel_UserConfigString[] = "Accelerometer Config";
-
-Char accelConfigTaskStack[ACCELCONFIG_TASK_STACK_SIZE];
+//Char accelConfigTaskStack[ACCELCONFIG_TASK_STACK_SIZE];
 /*********************************************************************
 * Profile Attributes - Table
 */
 
-static gattAttribute_t Accel_ServiceAttrTbl[] =
-{
-  // Data_Service Service Declaration
-  {
-    { ATT_BT_UUID_SIZE, primaryServiceUUID },
-    GATT_PERMIT_READ,
-    0,
-    (uint8_t *)&AccelServiceDecl
-  },
-    // Config Characteristic Declaration
-    {
-      { ATT_BT_UUID_SIZE, characterUUID },
-      GATT_PERMIT_READ,
-      0,
-      &accel_ConfigProps
-    },
-      // Config Characteristic Value
-      {
-        { ATT_UUID_SIZE, accel_ConfigUUID },
-        GATT_PERMIT_READ | GATT_PERMIT_WRITE,
-        0,
-        accel_ConfigVal
-      },
-
-	  // Config CUDs
-		{
-		  { ATT_BT_UUID_SIZE, charUserDescUUID },
-		  GATT_PERMIT_READ,
-		  0,
-		  (uint8_t *)&accel_UserConfigString
-		},
-
-    // Stream Characteristic Declaration
-    {
-      { ATT_BT_UUID_SIZE, characterUUID },
-      GATT_PERMIT_READ,
-      0,
-      &accel_StreamProps
-    },
-      // Stream Characteristic Value
-      {
-        { ATT_UUID_SIZE, accel_StreamUUID },
-        GATT_PERMIT_WRITE,
-        0,
-        accel_StreamVal
-      },
-      // Stream CCCD
-      {
-        { ATT_BT_UUID_SIZE, clientCharCfgUUID },
-        GATT_PERMIT_READ | GATT_PERMIT_WRITE,
-        0,
-        (uint8_t *)&accel_StreamConfig
-      },
-
-	  // Stream CUDs
-		{
-		  { ATT_BT_UUID_SIZE, charUserDescUUID },
-		  GATT_PERMIT_READ,
-		  0,
-		  (uint8_t *)&accel_UserStreamString
-		},
-};
+//static gattAttribute_t Accel_ServiceAttrTbl[] =
+//{
+//  // Data_Service Service Declaration
+//  {
+//    { ATT_BT_UUID_SIZE, primaryServiceUUID },
+//    GATT_PERMIT_READ,
+//    0,
+//    (uint8_t *)&AccelServiceDecl
+//  },
+//    // Config Characteristic Declaration
+//    {
+//      { ATT_BT_UUID_SIZE, characterUUID },
+//      GATT_PERMIT_READ,
+//      0,
+//      &accel_ConfigProps
+//    },
+//      // Config Characteristic Value
+//      {
+//        { ATT_UUID_SIZE, accel_ConfigUUID },
+//        GATT_PERMIT_READ | GATT_PERMIT_WRITE,
+//        0,
+//        accel_ConfigVal
+//      },
+//
+//	  // Config CUDs
+//		{
+//		  { ATT_BT_UUID_SIZE, charUserDescUUID },
+//		  GATT_PERMIT_READ,
+//		  0,
+//		  (uint8_t *)&accel_UserConfigString
+//		},
+//
+//    // Stream Characteristic Declaration
+//    {
+//      { ATT_BT_UUID_SIZE, characterUUID },
+//      GATT_PERMIT_READ,
+//      0,
+//      &accel_StreamProps
+//    },
+//      // Stream Characteristic Value
+//      {
+//        { ATT_UUID_SIZE, accel_StreamUUID },
+//        GATT_PERMIT_WRITE,
+//        0,
+//        accel_StreamVal
+//      },
+//      // Stream CCCD
+//      {
+//        { ATT_BT_UUID_SIZE, clientCharCfgUUID },
+//        GATT_PERMIT_READ | GATT_PERMIT_WRITE,
+//        0,
+//        (uint8_t *)&accel_StreamConfig
+//      },
+//
+//	  // Stream CUDs
+//		{
+//		  { ATT_BT_UUID_SIZE, charUserDescUUID },
+//		  GATT_PERMIT_READ,
+//		  0,
+//		  (uint8_t *)&accel_UserStreamString
+//		},
+//};
 
 /*********************************************************************
  * LOCAL FUNCTIONS

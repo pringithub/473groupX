@@ -40,13 +40,13 @@
 //**********************************************************************************
 #define EMG_TASK_PRIORITY				   	2
 #ifndef EMG_TASK_STACK_SIZE
-#define EMG_TASK_STACK_SIZE               	400
+#define EMG_TASK_STACK_SIZE               	600
 #endif
 
 #define EMG_PERIOD_IN_MS					30
 #define EMG_MOVING_WINDOW					1
 #define REP_THRESHHOLD_HIGH 				1600
-#define REP_THRESHHOLD_LOW  				800
+#define REP_THRESHHOLD_LOW  				500
 #define EMG_NUMBER_OF_SAMPLES_READING		4
 
 #define STARTTIME							1412800000
@@ -163,6 +163,8 @@ static void emg_init(void) {
 
 #ifndef USE_UART
 	digiPot_spi_init();
+	set_Wiper(120,0);
+
 #endif //USE_UART
 
 	//Configure clock object
@@ -323,7 +325,13 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 		if ( (repCount > 0 && (Seconds_get() - lastRepTime) > SET_TIMEOUT) || repCount == myWorkoutConfig.targetRepCount ) {
 
 			setCount++;
-			Log_info0("set done!!!!!!!!!!!!!!!!!!!!!!!!!!");
+#if defined(USE_UART)
+			Log_info0("set done!");
+#else
+			System_printf("set done\n");
+			System_flush();
+			printWorkoutConfig();
+#endif
 			emg_set_stats.numReps = repCount;
 			emg_set_stats.setDone = 1;
 
@@ -384,16 +392,16 @@ static void emgPoll_SwiFxn(UArg a0) {
 
 		rawAdc[adcCounter++] = localSum/EMG_NUMBER_OF_SAMPLES_READING;
 
-//#if defined(USE_UART)
+#if defined(USE_UART)
 //			Log_info2("adc0: %u \t adc1: %u", rawAdc[adcCounter-1], read_adc(1));
-//#else
+#else
 //			System_printf("adc0: %u \t adc1: %u\n", rawAdc[adcCounter-1], read_adc(1));
 //			System_flush();
-//#endif // USE_UART
+#endif // USE_UART
 
 		if (EMG_NUMBER_OF_SAMPLES_SLICE == adcCounter)
 		{
-			printWorkoutConfig();
+//			printWorkoutConfig();
 //			buzz(1);
 			adcCounter = 0;
 			processingDone = 0;
@@ -403,12 +411,12 @@ static void emgPoll_SwiFxn(UArg a0) {
 	}
 	else
 	{
-#if defined(USE_UART)
-		Log_info0("Missed deadline");
-#else
-		System_printf("Missed deadline\n");
-		System_flush();
-#endif //USE_UART
+//#if defined(USE_UART)
+//		Log_info0("Missed deadline");
+//#else
+////		System_printf("Missed deadline\n");
+////		System_flush();
+//#endif //USE_UART
 	}
 }
 
@@ -472,28 +480,27 @@ void analog_init() {
     PIN_setOutputValue(analogPinHandle, Board_ANALOG_EN, 0);
 }
 
-
-void sendStructBle(void) {
-	int i=0;
-	for (i=0; i<EMG_MAX_REPS;i++ )
-	{
-		emg_set_statsSend.pulseWidth[i] = emg_set_stats.pulseWidth[i];
-		emg_set_statsSend.deadWidth[i] = emg_set_stats.deadWidth[i];
-		emg_set_statsSend.concentricTime[i] = emg_set_stats.concentricTime[i];
-		emg_set_statsSend.eccentricTime[i] = emg_set_stats.eccentricTime[i];
-		emg_set_statsSend.peakIntensity[i] = emg_set_stats.peakIntensity[i];
-		emg_set_statsSend.movedOrNah[i] = emg_set_stats.movedOrNah[i];
-	}
-	emg_set_statsSend.numReps = emg_set_stats.numReps;
-	emg_set_statsSend.setDone = emg_set_stats.setDone;
-
-	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.pulseWidth, 38, 0);
-	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.deadWidth, 38, 0);
-	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.concentricTime, 38, 0);
-	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime, 38, 0);
-	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity, 38, 0);
-	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.movedOrNah, 21, 0);
-}
+//void sendStructBle(void) {
+//	int i=0;
+//	for (i=0; i<EMG_MAX_REPS;i++ )
+//	{
+//		emg_set_statsSend.pulseWidth[i] = emg_set_stats.pulseWidth[i];
+//		emg_set_statsSend.deadWidth[i] = emg_set_stats.deadWidth[i];
+//		emg_set_statsSend.concentricTime[i] = emg_set_stats.concentricTime[i];
+//		emg_set_statsSend.eccentricTime[i] = emg_set_stats.eccentricTime[i];
+//		emg_set_statsSend.peakIntensity[i] = emg_set_stats.peakIntensity[i];
+//		emg_set_statsSend.movedOrNah[i] = emg_set_stats.movedOrNah[i];
+//	}
+//	emg_set_statsSend.numReps = emg_set_stats.numReps;
+//	emg_set_statsSend.setDone = emg_set_stats.setDone;
+//
+//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.pulseWidth, 38, 0);
+//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.deadWidth, 38, 0);
+//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.concentricTime, 38, 0);
+//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime, 38, 0);
+//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity, 38, 0);
+//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.movedOrNah, 21, 0);
+//}
 
 void sendStructBleV2(void) {
 	int i=0;
@@ -533,6 +540,13 @@ void gracefulExitEmg(void) {
 	emgRunning = 0;
 	inRep = 0;
 	flushStruct();
+
+#if defined(USE_UART)
+						Log_info0("Grace");
+#else
+						System_printf("grace");
+						System_flush();
+#endif // USE_UART
 
 	if (myWorkoutConfig.imuFeedback)
 		Clock_stop(Clock_handle(&accelClock));

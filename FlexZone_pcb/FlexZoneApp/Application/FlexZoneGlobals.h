@@ -113,7 +113,6 @@ extern void buzz(uint8_t numTimes);
 
 //Bluetooth stuff
 extern user_app_error_type_t user_sendEmgPacket(uint8_t* pData, uint8_t len, app_pkt_type_t packetType);
-extern user_app_error_type_t user_sendAccelPacket(uint8_t* pData, uint8_t len, app_pkt_type_t packetType);
 
 
 //FOR TESTING: DELETE LATERS
