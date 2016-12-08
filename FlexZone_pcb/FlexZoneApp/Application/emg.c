@@ -120,6 +120,7 @@ static void adc_init(void);
 static uint32_t read_adc(uint8_t channel);
 void analog_init(void);
 void sendStructBle(void);
+void sendStructBleV2(void);
 void gracefulExitEmg(void);
 void flushStruct(void);
 //**********************************************************************************
@@ -336,7 +337,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 				Clock_stop(Clock_handle(&accelClock));
 
 			//do deep copy, send data, flush struct
-			sendStructBle();
+			sendStructBleV2();
 			flushStruct();
 
 			//haptic feedback on set completion
@@ -473,7 +474,6 @@ void analog_init() {
 
 
 void sendStructBle(void) {
-
 	int i=0;
 	for (i=0; i<EMG_MAX_REPS;i++ )
 	{
@@ -493,6 +493,33 @@ void sendStructBle(void) {
 	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime, 38, 0);
 	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity, 38, 0);
 	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.movedOrNah, 21, 0);
+}
+
+void sendStructBleV2(void) {
+	int i=0;
+	for (i=0; i<EMG_MAX_REPS;i++ )
+	{
+		emg_set_statsSend.pulseWidth[i] = emg_set_stats.pulseWidth[i];
+		emg_set_statsSend.deadWidth[i] = emg_set_stats.deadWidth[i];
+		emg_set_statsSend.concentricTime[i] = emg_set_stats.concentricTime[i];
+		emg_set_statsSend.eccentricTime[i] = emg_set_stats.eccentricTime[i];
+		emg_set_statsSend.peakIntensity[i] = emg_set_stats.peakIntensity[i];
+		emg_set_statsSend.movedOrNah[i] = emg_set_stats.movedOrNah[i];
+	}
+	emg_set_statsSend.numReps = emg_set_stats.numReps;
+	emg_set_statsSend.setDone = emg_set_stats.setDone;
+
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.pulseWidth[0], 20, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.pulseWidth[10], 18, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.deadWidth[0], 20, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.deadWidth[10], 18, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.concentricTime[0], 20, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.concentricTime[10], 18, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime[0], 20, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime[10], 18, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity[0], 20, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity[10], 18, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.movedOrNah[0], 21, 0);
 }
 
 void gracefulExitEmg(void) {
