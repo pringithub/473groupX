@@ -339,6 +339,9 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 			sendStructBle();
 			flushStruct();
 
+			//haptic feedback on set completion
+			if ( 1 == myWorkoutConfig.hapticFeedback)
+				buzz(1);
 		}//set is done
 
 		emg_set_stats.numReps = repCount;

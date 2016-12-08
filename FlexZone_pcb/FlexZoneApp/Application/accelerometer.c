@@ -149,39 +149,46 @@ static void accel_taskFxn(UArg a0, UArg a1) {
 		else {
 			accel_range_mask = user_mpuMovementState(reset_myAccel);
 
-			if(accel_range_mask != 0)
-			{
-				//start vibration motors
-				if(accel_range_mask & X_AXIS_STATE_MASK)
-				{
-#if defined(USE_UART)
-					Log_info0("ACCEL X out of bound ");
-#else
-					System_printf("ACCEL X out of bound\n");
-					System_flush();
-#endif
-				}
+			//if there is motion
+			if (accel_range_mask)
+				emg_set_stats.movedOrNah[repCount] = 1;
+			else //else
+				emg_set_stats.movedOrNah[repCount] = 0;
 
-				if(accel_range_mask & Y_AXIS_STATE_MASK)
-				{
-#if defined(USE_UART)
-					Log_info0("ACCEL Y out of bound ");
-#else
-					System_printf("ACCEL Y out of bound\n");
-					System_flush();
-#endif
-				}
-
-				if(accel_range_mask & Z_AXIS_STATE_MASK)
-				{
-#if defined(USE_UART)
-					Log_info0("ACCEL Z out of bound ");
-#else
-					System_printf("ACCEL Z out of bound\n");
-					System_flush();
-#endif
-				}
-			}
+//			if(accel_range_mask != 0)
+//			{
+//				//start vibration motors
+//				if(accel_range_mask & X_AXIS_STATE_MASK)
+//				{
+//#if defined(USE_UART)
+//					Log_info0("ACCEL X out of bound ");
+//#else
+//					System_printf("ACCEL X out of bound\n");
+//					System_flush();
+//#endif
+//				}
+//
+//				if(accel_range_mask & Y_AXIS_STATE_MASK)
+//				{
+//#if defined(USE_UART)
+//					Log_info0("ACCEL Y out of bound ");
+//#else
+//					System_printf("ACCEL Y out of bound\n");
+//					System_flush();
+//#endif
+//				}
+//
+//				if(accel_range_mask & Z_AXIS_STATE_MASK)
+//				{
+//#if defined(USE_UART)
+//					Log_info0("ACCEL Z out of bound ");
+//#else
+//					System_printf("ACCEL Z out of bound\n");
+//					System_flush();
+//#endif
+//
+//				}
+//			}
 		}
 	}
 }

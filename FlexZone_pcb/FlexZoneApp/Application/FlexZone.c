@@ -176,7 +176,7 @@ static uint8_t advertData[] =
   // complete name
   10,
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'Z',
+  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'D',
   5,
   GAP_ADTYPE_MANUFACTURER_SPECIFIC,
   0x11,
@@ -187,7 +187,7 @@ static uint8_t advertData[] =
 };
 
 // GAP GATT Attributes
-static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZoneZ";
+static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZoneD";
 
 // Globals used for ATT Response retransmission
 static gattMsgEvent_t *pAttRsp = NULL;
