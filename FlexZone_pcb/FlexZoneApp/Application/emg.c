@@ -480,27 +480,29 @@ void analog_init() {
     PIN_setOutputValue(analogPinHandle, Board_ANALOG_EN, 0);
 }
 
-//void sendStructBle(void) {
-//	int i=0;
-//	for (i=0; i<EMG_MAX_REPS;i++ )
-//	{
-//		emg_set_statsSend.pulseWidth[i] = emg_set_stats.pulseWidth[i];
-//		emg_set_statsSend.deadWidth[i] = emg_set_stats.deadWidth[i];
-//		emg_set_statsSend.concentricTime[i] = emg_set_stats.concentricTime[i];
-//		emg_set_statsSend.eccentricTime[i] = emg_set_stats.eccentricTime[i];
-//		emg_set_statsSend.peakIntensity[i] = emg_set_stats.peakIntensity[i];
-//		emg_set_statsSend.movedOrNah[i] = emg_set_stats.movedOrNah[i];
-//	}
-//	emg_set_statsSend.numReps = emg_set_stats.numReps;
-//	emg_set_statsSend.setDone = emg_set_stats.setDone;
-//
-//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.pulseWidth, 38, 0);
-//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.deadWidth, 38, 0);
-//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.concentricTime, 38, 0);
-//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime, 38, 0);
-//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity, 38, 0);
-//	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.movedOrNah, 21, 0);
-//}
+
+void sendStructBle(void) {
+	int i=0;
+	for (i=0; i<EMG_MAX_REPS;i++ )
+	{
+		emg_set_statsSend.pulseWidth[i] = emg_set_stats.pulseWidth[i];
+		emg_set_statsSend.deadWidth[i] = emg_set_stats.deadWidth[i];
+		emg_set_statsSend.concentricTime[i] = emg_set_stats.concentricTime[i];
+		emg_set_statsSend.eccentricTime[i] = emg_set_stats.eccentricTime[i];
+		emg_set_statsSend.peakIntensity[i] = emg_set_stats.peakIntensity[i];
+		emg_set_statsSend.movedOrNah[i] = emg_set_stats.movedOrNah[i];
+	}
+	emg_set_statsSend.numReps = emg_set_stats.numReps;
+	emg_set_statsSend.setDone = emg_set_stats.setDone;
+
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.pulseWidth, 38, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.deadWidth, 38, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.concentricTime, 38, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.eccentricTime, 38, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.peakIntensity, 38, 0);
+	user_sendEmgPacket((uint8_t*)&emg_set_statsSend.movedOrNah, 21, 0);
+}
+
 
 void sendStructBleV2(void) {
 	int i=0;

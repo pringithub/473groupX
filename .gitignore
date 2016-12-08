@@ -37,3 +37,6 @@ FlexZone_dev/FlexZoneStack/.config/*
 FlexZone_dev/FlexZoneStack/Debug/*
 FlexZone_dev/FlexZoneStack/Release/*
 FlexZone_dev/FlexZoneStack/.xdchelp
+
+FlexZone_dev/TestApp/empty.c
+FlexZone_dev/FlexZoneApp/Application/accelerometer.c
