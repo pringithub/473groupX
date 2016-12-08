@@ -104,6 +104,7 @@ extern uint8_t repCount;
 extern uint8_t setIMUThres;
 extern uint8_t stopEmgRequest;
 extern uint8_t emgRunning;
+extern uint8_t setCount;
 //**********************************************************************************
 // General Functions
 //**********************************************************************************

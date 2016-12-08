@@ -33,7 +33,7 @@
 //**********************************************************************************
 #define ACCEL_TASK_PRIORITY					1
 #ifndef ACCEL_TASK_STACK_SIZE
-#define ACCEL_TASK_STACK_SIZE              600
+#define ACCEL_TASK_STACK_SIZE              400
 #endif
 
 #define ACCEL_PERIOD_IN_MS					300

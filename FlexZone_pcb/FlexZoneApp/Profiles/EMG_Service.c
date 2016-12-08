@@ -700,6 +700,7 @@ void emgConfig_SwiFxn(void) {
 	}
 	else {						//Post semaphore to emg_taskFxn if not stop request
 		saveWorkoutConfig();
+		setCount = 0;
 		Clock_start(Clock_handle(&emgClock));
 		emgRunning = 1;
 		Semaphore_post(Semaphore_handle(&emgConfig_Semaphore));

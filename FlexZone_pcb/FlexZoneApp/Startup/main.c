@@ -146,7 +146,7 @@ void printWorkoutConfig(void) {
 				myWorkoutConfig.targetSetCount,myWorkoutConfig.targetRepCount,myWorkoutConfig.maxRestSeconds,
 				myWorkoutConfig.hapticFeedback,myWorkoutConfig.imuFeedback);
 #else
-		System_printf("Sets: %u Reps: %u Rest: %u Haptic: %u IMU: %un",
+		System_printf("Sets: %u Reps: %u Rest: %u Haptic: %u IMU: %u\n",
 				myWorkoutConfig.targetSetCount,myWorkoutConfig.targetRepCount,myWorkoutConfig.maxRestSeconds,
 				myWorkoutConfig.hapticFeedback,myWorkoutConfig.imuFeedback);
 		System_flush();

@@ -79,6 +79,7 @@ uint8_t processingDone = 1;
 uint8_t inRep = 0;
 uint8_t setIMUThres = 0;
 uint8_t repCount = 0;
+uint8_t setCount = 0;
 
 //workout config
 Workout_config myWorkoutConfig;
@@ -186,10 +187,7 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 	emg_init();
 	uint64_t pulseTickCounter = 0, deadTickCounter = 0;
 	Timestamp_getFreq(&freq);
-	uint32_t repCount = 0;
 	uint16_t pulsePeak = 0;
-
-	uint8_t setCount = 0;
 
 	uint32_t t_start, t_end;
 	uint32_t lastRepTime = Seconds_get(), pulsePeakTime, pulseEndTime;
@@ -338,14 +336,13 @@ static void emg_taskFxn(UArg a0, UArg a1) {
 				Clock_stop(Clock_handle(&accelClock));
 
 			//do deep copy, send data, flush struct
-//			sendStructBle();
+			sendStructBle();
 			flushStruct();
 
 		}//set is done
 
 		emg_set_stats.numReps = repCount;
 		processingDone = 1;
-
 
 		//reset all required items and stop clock on user stop request
 		if (stopEmgRequest)
@@ -496,6 +493,7 @@ void sendStructBle(void) {
 }
 
 void gracefulExitEmg(void) {
+
 	stopEmgRequest = 0;
 	//clear set buffer
 	//reset adcCounter and repCount
