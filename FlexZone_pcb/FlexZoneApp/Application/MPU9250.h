@@ -45,6 +45,19 @@
 #define GYRO 1
 #define ACCEL 0
 
+//Threshold values
+#define X_AXIS_NEG_THRES	2000
+#define X_AXIS_POS_THRES	2000
+
+#define Y_AXIS_NEG_THRES	2000
+#define Y_AXIS_POS_THRES	2000
+
+#define Z_AXIS_NEG_THRES	2000
+#define Z_AXIS_POS_THRES	2000
+
+#define X_AXIS_STATE_MASK	0x01
+#define Y_AXIS_STATE_MASK	0x02
+#define Z_AXIS_STATE_MASK	0x04
 //**********************************************************************************
 // Global Data Structures
 //**********************************************************************************
@@ -109,5 +122,11 @@ uint8_t i2cRead(uint8_t regAddr);
  * @param	uint8_t data from accelerometer's SDA line.
  */
 void i2cWrite(uint8_t regAddr, uint8_t data);
+
+/*****************************************************************************/
+/********************************MPU User functions************************/
+
+uint8_t user_mpuMovementState(Accel_State accelState);
+void user_setMpuThreshold(Accel_State accelState);
 
 #endif /* MPU2950_H */

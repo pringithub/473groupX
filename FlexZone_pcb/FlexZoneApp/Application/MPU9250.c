@@ -43,6 +43,8 @@ uint8_t axes[2][3] = {
 		{ACCEL_XOUT_H, ACCEL_YOUT_H, ACCEL_ZOUT_H},
 		{GYRO_XOUT_H, GYRO_YOUT_H, GYRO_ZOUT_H}
 };
+Accel_State Thres_accelState;
+
 //**********************************************************************************
 // Local Function Prototypes
 //**********************************************************************************
@@ -199,3 +201,52 @@ void i2cWrite(uint8_t regAddr, uint8_t data)
 		System_flush();
 	}
 }
+
+
+/*****************************************************************************/
+/********************************MPU User functions************************/
+
+void user_setMpuThreshold(Accel_State accelState)
+{
+	Thres_accelState.ACCEL_X = accelState.ACCEL_X;
+	Thres_accelState.ACCEL_Y = accelState.ACCEL_Y;
+	Thres_accelState.ACCEL_Z = accelState.ACCEL_Z;
+}
+
+
+uint8_t user_mpuMovementState(Accel_State accelState)
+{
+	uint8_t axis_state = 0;
+	if((accelState.ACCEL_X <= (Thres_accelState.ACCEL_X - X_AXIS_NEG_THRES)) ||
+			(accelState.ACCEL_X >= (Thres_accelState.ACCEL_X + X_AXIS_POS_THRES)))
+	{
+		axis_state |= X_AXIS_STATE_MASK;
+	}
+	else
+	{
+		axis_state &= (~X_AXIS_STATE_MASK);
+	}
+
+	if((accelState.ACCEL_Y <= (Thres_accelState.ACCEL_Y - Y_AXIS_NEG_THRES)) ||
+			(accelState.ACCEL_Y >= (Thres_accelState.ACCEL_Y + Y_AXIS_POS_THRES)))
+	{
+		axis_state |= Y_AXIS_STATE_MASK;
+	}
+	else
+	{
+		axis_state &= (~Y_AXIS_STATE_MASK);
+	}
+
+	if((accelState.ACCEL_Z <= (Thres_accelState.ACCEL_Z - Z_AXIS_NEG_THRES)) ||
+			(accelState.ACCEL_Z >= (Thres_accelState.ACCEL_Z + Z_AXIS_POS_THRES)))
+	{
+		axis_state |= Z_AXIS_STATE_MASK;
+	}
+	else
+	{
+		axis_state &= (~Z_AXIS_STATE_MASK);
+	}
+
+	return(axis_state);
+}
+

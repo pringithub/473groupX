@@ -626,8 +626,15 @@ static bStatus_t EMG_Service_WriteAttrCB( uint16_t connHandle, gattAttribute_t *
 }
 
 void saveWorkoutConfig() {
-	myWorkoutConfig.targetSetCount=emgConfig_data[0];
-	myWorkoutConfig.targetRepCount=emgConfig_data[1];
+	if (emgConfig_data[0] == 0x00)
+		myWorkoutConfig.targetSetCount=10;
+	else
+		myWorkoutConfig.targetSetCount=emgConfig_data[0];
+	if (emgConfig_data[1] == 0x00)
+		myWorkoutConfig.targetRepCount=EMG_MAX_REPS;
+	else
+		myWorkoutConfig.targetRepCount=emgConfig_data[1];
+
 	myWorkoutConfig.maxRestSeconds=emgConfig_data[2]*30;
 	myWorkoutConfig.hapticFeedback=emgConfig_data[3];
 	myWorkoutConfig.imuFeedback=emgConfig_data[4];
@@ -679,10 +686,22 @@ void emgConfig_createSwi(void) {
 }
 
 void emgConfig_SwiFxn(void) {
-	//Post semaphore to emg_taskFxn
-	saveWorkoutConfig();
 	buzz(2);
-	Clock_start(Clock_handle(&emgClock));
-
-	Semaphore_post(Semaphore_handle(&emgConfig_Semaphore));
+	if (emgConfig_data[0] == 0xCF && emgConfig_data[4] == 0xCF)	// stop flag
+	{
+		if (emgRunning)
+			stopEmgRequest = 1;		//sets flag so graceful exit can run on next scheduled run
+#if defined(USE_UART)
+		Log_info0("Stopping fam");
+#else
+		System_printf("Stopping fam\n");
+		System_flush();
+#endif //USE_UART
+	}
+	else {						//Post semaphore to emg_taskFxn if not stop request
+		saveWorkoutConfig();
+		Clock_start(Clock_handle(&emgClock));
+		emgRunning = 1;
+		Semaphore_post(Semaphore_handle(&emgConfig_Semaphore));
+	}
 }

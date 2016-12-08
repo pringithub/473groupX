@@ -176,7 +176,13 @@ static uint8_t advertData[] =
   // complete name
   10,
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'D'
+  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'D',
+  5,
+  GAP_ADTYPE_MANUFACTURER_SPECIFIC,
+  0x11,
+  0x11,
+  0x40,
+  0x11
 
 };
 

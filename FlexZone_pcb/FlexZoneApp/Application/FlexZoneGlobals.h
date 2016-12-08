@@ -29,6 +29,7 @@
 
 //EMG
 #define EMG_NUMBER_OF_SAMPLES_SLICE			50
+#define EMG_MAX_REPS						19 //lol
 
 //**********************************************************************************
 // Data Structures
@@ -43,14 +44,14 @@ typedef struct {
 } Accel_State;
 
 typedef struct {
-	uint32_t pulseWidth[20];
-	uint32_t deadWidth[20];
+	uint16_t pulseWidth[EMG_MAX_REPS];
+	uint16_t deadWidth[EMG_MAX_REPS];
 	//time from start of rep to peak
-	uint32_t concentricTime[20];
+	uint16_t concentricTime[EMG_MAX_REPS];
 	//time from peak of rep to end
-	uint32_t eccentricTime[20];
-	uint32_t pulsePeak[20];
-	uint8_t movedOrNah[20];			//1 - moved; 0 - nah
+	uint16_t eccentricTime[EMG_MAX_REPS];
+	uint16_t peakIntensity[EMG_MAX_REPS];
+	uint8_t movedOrNah[EMG_MAX_REPS];			//1 - moved; 0 - nah
 	uint8_t numReps;
 	uint8_t setDone;
 } EMG_stats;
@@ -100,6 +101,9 @@ extern Clock_Struct accelClock;
 
 //Data
 extern uint8_t repCount;
+extern uint8_t setIMUThres;
+extern uint8_t stopEmgRequest;
+extern uint8_t emgRunning;
 //**********************************************************************************
 // General Functions
 //**********************************************************************************

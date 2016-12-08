@@ -23,6 +23,7 @@
 
 //Home brewed Header Files
 #include "accelerometer.h"
+#include "FlexZoneGlobals.h"
 #include "MPU9250.h"
 
 //Standard Header Files
@@ -51,7 +52,8 @@ Semaphore_Struct accelSemaphore;
 //Clock Structures
 Clock_Struct accelClock;
 
-Accel_State myAccel;
+//Accel_State myAccel;
+Accel_State reset_myAccel;
 
 //**********************************************************************************
 // Local Function Prototypes
@@ -114,25 +116,73 @@ void accel_init()
  * @return 	none
  */
 static void accel_taskFxn(UArg a0, UArg a1) {
+	uint8_t accel_range_mask=0;
+
 	//Initialize required hardware & clocks for task.
 	accel_init();
 
 	while (1) {
 		//Wait for Accelerometer Semaphore
 		Semaphore_pend(Semaphore_handle(&accelSemaphore), BIOS_WAIT_FOREVER);
-		myAccel.ACCEL_X = read_MPU(X_AXIS, ACCEL);
-		myAccel.ACCEL_Y = read_MPU(Y_AXIS, ACCEL);
-		myAccel.ACCEL_Z = read_MPU(Z_AXIS, ACCEL);
-		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
-		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
-		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
+//		myAccel.ACCEL_X = read_MPU(X_AXIS, ACCEL);
+//		myAccel.ACCEL_Y = read_MPU(Y_AXIS, ACCEL);
+//		myAccel.ACCEL_Z = read_MPU(Z_AXIS, ACCEL);
+//		myAccel.GYRO_X = read_MPU(X_AXIS, GYRO);
+//		myAccel.GYRO_Y = read_MPU(Y_AXIS, GYRO);
+//		myAccel.GYRO_Z = read_MPU(Z_AXIS, GYRO);
+//#if defined(USE_UART)
+//		Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
+//#else
+////		System_printf("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d\t%d\n", myAccel.ACCEL_X, myAccel.ACCEL_Y, myAccel.ACCEL_Z, i2cRead(0x75));
+////		System_printf("Whoami: %d\n", i2cRead(0x75));
+////		System_flush();
+//#endif // USE_UART
+		reset_myAccel.ACCEL_X = read_MPU(X_AXIS, ACCEL);
+		reset_myAccel.ACCEL_Y = read_MPU(Y_AXIS, ACCEL);
+		reset_myAccel.ACCEL_Z = read_MPU(Z_AXIS, ACCEL);
+
+		if(setIMUThres)	{
+			//Initialize the Accel threshold values depending on first value read
+			user_setMpuThreshold(reset_myAccel);
+			setIMUThres = 0;
+		}
+		else {
+			accel_range_mask = user_mpuMovementState(reset_myAccel);
+
+			if(accel_range_mask != 0)
+			{
+				//start vibration motors
+				if(accel_range_mask & X_AXIS_STATE_MASK)
+				{
 #if defined(USE_UART)
-		Log_info3("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d", (IArg)myAccel.ACCEL_X, (IArg)myAccel.ACCEL_Y, (IArg)myAccel.ACCEL_Z);
+					Log_info0("ACCEL X out of bound ");
 #else
-//		System_printf("Accel Thread: ACCEL (XYZ) \t%d\t%d\t%d\t%d\n", myAccel.ACCEL_X, myAccel.ACCEL_Y, myAccel.ACCEL_Z, i2cRead(0x75));
-//		System_printf("Whoami: %d\n", i2cRead(0x75));
-//		System_flush();
-#endif // USE_UART
+					System_printf("ACCEL X out of bound\n");
+					System_flush();
+#endif
+				}
+
+				if(accel_range_mask & Y_AXIS_STATE_MASK)
+				{
+#if defined(USE_UART)
+					Log_info0("ACCEL Y out of bound ");
+#else
+					System_printf("ACCEL Y out of bound\n");
+					System_flush();
+#endif
+				}
+
+				if(accel_range_mask & Z_AXIS_STATE_MASK)
+				{
+#if defined(USE_UART)
+					Log_info0("ACCEL Z out of bound ");
+#else
+					System_printf("ACCEL Z out of bound\n");
+					System_flush();
+#endif
+				}
+			}
+		}
 	}
 }
 
