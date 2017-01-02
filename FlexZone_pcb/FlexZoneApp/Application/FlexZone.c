@@ -33,6 +33,7 @@
 /*********************************************************************
  * INCLUDES
  */
+#include <Accel_Service.h>
 #include <EMG_Service.h>
 #include <string.h>
 
@@ -175,7 +176,7 @@ static uint8_t advertData[] =
   // complete name
   10,
   GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'Z',
+  'F', 'l', 'e', 'x', 'Z', 'o', 'n', 'e', 'D',
   5,
   GAP_ADTYPE_MANUFACTURER_SPECIFIC,
   0x11,
@@ -186,7 +187,7 @@ static uint8_t advertData[] =
 };
 
 // GAP GATT Attributes
-static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZoneZ";
+static uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "FlexZoneD";
 
 // Globals used for ATT Response retransmission
 static gattMsgEvent_t *pAttRsp = NULL;
@@ -194,12 +195,15 @@ static uint8_t rspTxRetry = 0;
 
 //Data array used by App and BLE stack to psuh EMG and Accel data
 static uint8_t emgArrayData[EMG_STREAM_LEN];
+static uint8_t accelArrayData[ACCEL_STREAM_LEN];
 
 //Arrays to store test data from EMG and ACCEL
 //static uint8_t test_emgArrayData[EMG_STREAM_LEN - 2];
 //static uint8_t test_accelArrayData[ACCEL_STREAM_LEN - 2];
 
 //Semaphore_Struct emgConfig_Semaphore;
+extern uint8_t accelConfig_data[];
+
 extern uint8_t emgConfig_data[];
 /*********************************************************************
  * LOCAL FUNCTIONS
@@ -226,6 +230,7 @@ static void user_gapBondMgr_pairStateCB(uint16_t connHandle, uint8_t state,
 //static void buttonDebounceSwiFxn(UArg buttonId);
 //static void user_handleButtonPress(button_state_t *pState);
 static void user_handleEmgData(void);
+static void user_handleAccelData(void);
 
 // Generic callback handlers for value changes in services.
 static void user_service_ValueChangeCB( uint16_t connHandle, uint16_t svcUuid, uint8_t paramID, uint8_t *pValue, uint16_t len );
@@ -234,6 +239,8 @@ static void user_service_CfgChangeCB( uint16_t connHandle, uint16_t svcUuid, uin
 // Task context handlers for generated services.
 static void user_EMGService_ValueChangeHandler(char_data_t *pCharData);
 static void user_EMGService_CfgChangeHandler(char_data_t *pCharData);
+static void user_AccelService_ValueChangeHandler(char_data_t *pCharData);
+static void user_AccelService_CfgChangeHandler(char_data_t *pCharData);
 
 // Task handler for sending notifications.
 static void user_updateCharVal(char_data_t *pCharData);
@@ -275,12 +282,12 @@ static EMGServiceCBs_t user_EMG_ServiceCBs =
 };
 
 // Data Service callback handler.
-//// The type Data_ServiceCBs_t is defined in Data_Service.h
-//static AccelServiceCBs_t user_Accel_ServiceCBs=
-//{
-//  .pfnChangeCb    = user_service_ValueChangeCB, // Characteristic value change callback handler
-//  .pfnCfgChangeCb = user_service_CfgChangeCB, // Noti/ind configuration callback handler
-//};
+// The type Data_ServiceCBs_t is defined in Data_Service.h
+static AccelServiceCBs_t user_Accel_ServiceCBs=
+{
+  .pfnChangeCb    = user_service_ValueChangeCB, // Characteristic value change callback handler
+  .pfnCfgChangeCb = user_service_CfgChangeCB, // Noti/ind configuration callback handler
+};
 
 
 /*********************************************************************
@@ -402,10 +409,12 @@ static void FlexZone_init(void)
 
   // Add services to GATT server and give ID of this task for Indication acks.
   EMGService_AddService( selfEntity );
+  AccelService_AddService( selfEntity );
 
   // Register callbacks with the generated services that
   // can generate events (writes received) to the application
   EMGService_RegisterAppCBs( &user_EMG_ServiceCBs );
+  AccelService_RegisterAppCBs( &user_Accel_ServiceCBs );
 
   // Placeholder variable for characteristic intialization
   uint8_t initVal[EMG_STREAM_LEN] = {0};
@@ -413,6 +422,10 @@ static void FlexZone_init(void)
   // Initalization of characteristics in EMGService that can provide data.
   EMGService_SetParameter(EMG_CONFIG_ID, EMG_CONFIG_LEN, initVal);
   EMGService_SetParameter(EMG_STREAM_ID, EMG_STREAM_LEN, initVal);
+
+  // Initalization of characteristics in Accel_Service that can provide data.
+  AccelService_SetParameter(ACCEL_CONFIG_ID, ACCEL_CONFIG_LEN, initVal);
+  AccelService_SetParameter(ACCEL_STREAM_ID, ACCEL_STREAM_LEN, initVal);
 
   // Start the stack in Peripheral mode.
   VOID GAPRole_StartDevice(&user_gapRoleCBs);
@@ -543,6 +556,11 @@ static void user_processApplicationMessage(app_msg_t *pMsg)
       	  case EMG_SERVICE_SERV_UUID:
 			user_EMGService_ValueChangeHandler(pCharData);
 			break;
+
+        case ACCEL_SERVICE_SERV_UUID:
+          user_AccelService_ValueChangeHandler(pCharData);
+          break;
+
       }
       break;
 
@@ -551,6 +569,9 @@ static void user_processApplicationMessage(app_msg_t *pMsg)
       switch(pCharData->svcUUID) {
       case EMG_SERVICE_SERV_UUID:
           user_EMGService_CfgChangeHandler(pCharData);
+          break;
+        case ACCEL_SERVICE_SERV_UUID:
+          user_AccelService_CfgChangeHandler(pCharData);
           break;
       }
       break;
@@ -574,10 +595,25 @@ static void user_processApplicationMessage(app_msg_t *pMsg)
       }
       break;
 
+//    case APP_MSG_BUTTON_DEBOUNCED: /* Message from swi about pin change */
+//      {
+//    	  Log_info0("APP_MSG_BUTTON_DEBOUNCED event called ");
+//    	  button_state_t *pButtonState = (button_state_t *)pMsg->pdu;
+//		user_handleButtonPress(pButtonState);
+//      }
+//      break;
+
     case APP_MSG_SEND_EMG_DATA:
     	{
     		Log_info0("APP_MSG_SEND_EMG_DATA event called ");
             user_handleEmgData();
+        }
+    	break;
+
+    case APP_MSG_SEND_ACCEL_DATA:
+    	{
+    		Log_info0("APP_MSG_SEND_ACCEL_DATA event called ");
+    		user_handleAccelData();
         }
     	break;
   }
@@ -696,6 +732,25 @@ static void user_handleEmgData(void)
 }
 
 /*
+ * @brief   Handle a debounced button press or release in Task context.
+ *          Invoked by the taskFxn based on a message received from a callback.
+ *
+ * @see     buttonDebounceSwiFxn
+ * @see     buttonCallbackFxn
+ *
+ * @param   None.
+ *
+ * @return  None.
+ */
+static void user_handleAccelData(void)
+{
+	  // Update the service with the new value.
+	  // Will automatically send notification/indication if enabled.
+	 AccelService_SetParameter(ACCEL_STREAM_ID,
+									 sizeof(accelArrayData),
+									 accelArrayData);
+}
+/*
  * @brief   Handle a CCCD (configuration change) write received from a peer
  *          device. This tells us whether the peer device wants us to send
  *          Notifications or Indications.
@@ -728,23 +783,23 @@ void user_EMGService_ValueChangeHandler(char_data_t *pCharData)
       // Do something useful with pCharData->data here
       // -------------------------
       // Copy received data to holder array, ensuring NULL termination.
-    	memcpy(emgConfig_data, pCharData->data, pCharData->dataLen/*EMG_CONFIG_LEN-1*/);
+    	memcpy(emgConfig_data, pCharData->data, EMG_CONFIG_LEN-1);
         Swi_post(Swi_handle(&emgConfigSwi));
 
       // Needed to copy before log statement, as the holder array remains after
       // the pCharData message has been freed and reused for something else.
       Log_info3("Value Change msg: %s %s: %s",
-                (IArg)"EMG Service",
-                (IArg)"Config",
+                (IArg)"Data Service",
+                (IArg)"String",
                 (IArg)emgConfig_data);
       break;
 
     case EMG_STREAM_ID:
 
-//      Log_info3("Value Change msg: Data Service Stream: %02x:%02x:%02x...",
-//                (IArg)pCharData->data[0],
-//                (IArg)pCharData->data[1],
-//                (IArg)pCharData->data[2]);
+      Log_info3("Value Change msg: Data Service Stream: %02x:%02x:%02x...",
+                (IArg)pCharData->data[0],
+                (IArg)pCharData->data[1],
+                (IArg)pCharData->data[2]);
       // -------------------------
       // Do something useful with pCharData->data here
       break;
@@ -778,8 +833,8 @@ void user_EMGService_CfgChangeHandler(char_data_t *pCharData)
   {
     case EMG_STREAM_ID:
       Log_info3("CCCD Change msg: %s %s: %s",
-                (IArg)"EMG Service",
-                (IArg)"Stream",
+                (IArg)"Button Service",
+                (IArg)"BUTTON0",
                 (IArg)configValString);
       // -------------------------
       // Do something useful with configValue here. It tells you whether someone
@@ -799,6 +854,104 @@ void user_EMGService_CfgChangeHandler(char_data_t *pCharData)
       break;*/
   }
 }
+
+/*
+ * @brief   Handle a write request sent from a peer device.
+ *
+ *          Invoked by the Task based on a message received from a callback.
+ *
+ *          When we get here, the request has already been accepted by the
+ *          service and is valid from a BLE protocol perspective as well as
+ *          having the correct length as defined in the service implementation.
+ *
+ * @param   pCharData  pointer to malloc'd char write data
+ *
+ * @return  None.
+ */
+void user_AccelService_ValueChangeHandler(char_data_t *pCharData)
+{
+  // Value to hold the received string for printing via Log, as Log printouts
+  // happen in the Idle task, and so need to refer to a global/static variable.
+//  static uint8_t received_string[ACCEL_CONFIG_LEN] = {0};
+
+  switch (pCharData->paramID)
+  {
+    case ACCEL_CONFIG_ID:
+      // Do something useful with pCharData->data here
+      // -------------------------
+      // Copy received data to holder array, ensuring NULL termination.
+//      memset(received_string, 0, ACCEL_CONFIG_LEN);
+      memcpy(accelConfig_data, pCharData->data, ACCEL_CONFIG_LEN-1);
+
+      //accelConfig_SwiFxn();
+      Swi_post(Swi_handle(&accelConfigSwi));
+
+      // Needed to copy before log statement, as the holder array remains after
+      // the pCharData message has been freed and reused for something else.
+      Log_info3("Value Change msg: %s %s: %s",
+                (IArg)"Data Service",
+                (IArg)"String",
+                (IArg)accelConfig_data);
+      break;
+
+    case ACCEL_STREAM_ID:
+      Log_info3("Value Change msg: Data Service Stream: %02x:%02x:%02x...",
+                (IArg)pCharData->data[0],
+                (IArg)pCharData->data[1],
+                (IArg)pCharData->data[2]);
+      // -------------------------
+      // Do something useful with pCharData->data here
+      break;
+
+  default:
+    return;
+  }
+}
+
+/*
+ * @brief   Handle a CCCD (configuration change) write received from a peer
+ *          device. This tells us whether the peer device wants us to send
+ *          Notifications or Indications.
+ *
+ * @param   pCharData  pointer to malloc'd char write data
+ *
+ * @return  None.
+ */
+void user_AccelService_CfgChangeHandler(char_data_t *pCharData)
+{
+  // Cast received data to uint16, as that's the format for CCCD writes.
+  uint16_t configValue = *(uint16_t *)pCharData->data;
+  char *configValString;
+
+  // Determine what to tell the user
+  switch(configValue)
+  {
+  case GATT_CFG_NO_OPERATION:
+    configValString = "Noti/Ind disabled";
+    break;
+  case GATT_CLIENT_CFG_NOTIFY:
+    configValString = "Notifications enabled";
+    break;
+  case GATT_CLIENT_CFG_INDICATE:
+    configValString = "Indications enabled";
+    break;
+  }
+
+  switch (pCharData->paramID)
+  {
+    case ACCEL_STREAM_ID:
+      Log_info3("CCCD Change msg: %s %s: %s",
+                (IArg)"Data Service",
+                (IArg)"Stream",
+                (IArg)configValString);
+      // -------------------------
+      // Do something useful with configValue here. It tells you whether someone
+      // wants to know the state of this characteristic.
+      // ...
+      break;
+  }
+}
+
 
 /*
  * @brief   Process an incoming BLE stack message.
@@ -1230,6 +1383,44 @@ user_app_error_type_t user_sendEmgPacket(uint8_t* pData,
 }
 
 /*
+ * @brief  This function creates the packet for Accelerometer service and
+ * 			pushes it to the BLE stack
+ *
+ * @note   Called whenever data has to be sent.
+ *
+ * @param  *pData : Pointer to array with accel values.
+ * @param	len	:   length of the data. This does not include the 2 bytes of header
+ * @param   packetType : Indicates if it is configuration or data type packet
+ *
+ * @return	user_app_error_type_t : Error type, if any, or Error_OK
+ */
+user_app_error_type_t user_sendAccelPacket(uint8_t* pData,
+													uint8 len,
+													app_pkt_type_t packetType)
+{
+
+
+	if((pData == NULL) || (len == 0))
+	{
+		return(USER_APP_ERROR_INVALID_PARAM);
+	}
+	else if(len > ACCEL_STREAM_LEN - 2)	//Exclude two bytes of header
+	{
+		return(USER_APP_ERROR_INVALID_LEN);
+	}
+	else
+	{
+		accelArrayData[0] = packetType;	//  packet type
+		accelArrayData[1] = len; //Length of data. This does not include the two bytes of header
+
+		memcpy(&accelArrayData[2], pData, len);
+
+		user_enqueueRawAppMsg(APP_MSG_SEND_ACCEL_DATA,
+		    	                      (uint8_t *)accelArrayData, sizeof(accelArrayData));
+	}
+}
+
+/*
  * @brief  Convenience function for updating characteristic data via char_data_t
  *         structured message.
  *
@@ -1240,6 +1431,11 @@ user_app_error_type_t user_sendEmgPacket(uint8_t* pData,
 static void user_updateCharVal(char_data_t *pCharData)
 {
   switch(pCharData->svcUUID) {
+    case ACCEL_SERVICE_SERV_UUID:
+      AccelService_SetParameter(pCharData->paramID, pCharData->dataLen,
+                              pCharData->data);
+    break;
+
     case EMG_SERVICE_SERV_UUID:
 		EMGService_SetParameter(pCharData->paramID, pCharData->dataLen,
                                  pCharData->data);

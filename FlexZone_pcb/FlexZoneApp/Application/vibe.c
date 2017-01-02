@@ -30,7 +30,7 @@
 //**********************************************************************************
 #define VIBE_TASK_PRIORITY					1
 #ifndef VIBE_TASK_STACK_SIZE
-#define VIBE_TASK_STACK_SIZE              300
+#define VIBE_TASK_STACK_SIZE              200
 #endif
 
 //**********************************************************************************
@@ -87,7 +87,7 @@ void vibe_createTask()
     taskParams.stack = &vibeTaskStack;
     taskParams.priority = VIBE_TASK_PRIORITY;
 
-    Task_construct(&vibeTask, vibe_taskFxn, &taskParams, NULL);
+    Task_construct(&vibeTask, (Task_FuncPtr)vibe_taskFxn, &taskParams, NULL);
 }
 
 /**

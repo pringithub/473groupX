@@ -72,7 +72,7 @@
 /*********************************************************************
  * CONSTANTS
  */
-#define EMGCONFIG_TASK_STACK_SIZE		300
+#define EMGCONFIG_TASK_STACK_SIZE		256
 #define EMGCONFIG_TASK_PRIORITY			3
 /*********************************************************************
  * TYPEDEFS
@@ -650,9 +650,8 @@ static void emgConfig_task(UArg a0, UArg a1)
 		Log_info5("EMG Config data received: %c-%c-%c-%c-%c",
 				emgConfig_data[0]+'0',emgConfig_data[1]+'0',emgConfig_data[2]+'0',emgConfig_data[3]+'0',emgConfig_data[4]+'0');
 #else
-		System_printf("EMG Config data received \n");
-//		System_printf("EMG Config data received: %c-%c-%c-%c-%c\n",
-//				emgConfig_data[0],emgConfig_data[1],emgConfig_data[2],emgConfig_data[3],emgConfig_data[4]);
+		System_printf("EMG Config data received: %c-%c-%c-%c-%c\n",
+				emgConfig_data[0],emgConfig_data[1],emgConfig_data[2],emgConfig_data[3],emgConfig_data[4]);
 		System_flush();
 #endif //USE_UART
 	}

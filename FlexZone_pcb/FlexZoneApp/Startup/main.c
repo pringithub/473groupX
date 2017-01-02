@@ -121,7 +121,6 @@ int main() {
 	FlexZone_createTask();
 	//EMG task - Priority 1
 	emg_createTask();
-
 	// MPU2650 Accelerometer (SPI) - Priority 2
 	accel_createTask();
 

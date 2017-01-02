@@ -70,6 +70,7 @@ extern "C"
 extern void FlexZone_createTask(void);
 
 extern user_app_error_type_t user_sendEmgPacket(uint8_t* pData, uint8 len, app_pkt_type_t packetType);
+extern user_app_error_type_t user_sendAccelPacket(uint8_t* pData, uint8 len, app_pkt_type_t packetType);
 /*********************************************************************
 *********************************************************************/
 
